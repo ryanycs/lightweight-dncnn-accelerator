@@ -50,7 +50,7 @@ module PE_array #(
 
     input [2:0]                             opsum_e_cnt,
     input [1:0]                             opsum_t_cnt,
-    input [1:0]                             layer_info
+    input [2:0]                             layer_info
 );
 
     localparam [2:0] IDLE    = 3'd0;
@@ -63,9 +63,9 @@ module PE_array #(
     reg [2:0]             S ,NS;
 
     // LN
-    reg [NUMS_PE_ROW-2:0] LN_config_reg;
+    reg [NUMS_PE_ROW-2:0] LN_config_reg; 
 
-    // Tag register
+    // Tag register 
     reg [XID_BITS-1:0]    ifmap_tx      [0:NUMS_PE_ROW * NUMS_PE_COL-1];
     reg [XID_BITS-1:0]    filter_tx     [0:NUMS_PE_ROW * NUMS_PE_COL-1];
     reg [XID_BITS-1:0]    ipsum_tx      [0:NUMS_PE_ROW * NUMS_PE_COL-1];
@@ -112,7 +112,7 @@ module PE_array #(
 
     // PE Array
     genvar y_idx, x_idx;
-    generate
+    generate 
         for(y_idx=0; y_idx<NUMS_PE_ROW; y_idx=y_idx+1)begin: PE_ARRAY_Y
             for(x_idx=0; x_idx<NUMS_PE_COL; x_idx=x_idx+1)begin: PE_ARRAY_X
                 PE PEU (
@@ -142,13 +142,13 @@ module PE_array #(
        S <= rst ? IDLE : NS;
     end
 
-    // Next State
+    // Next State 
     always@(*) begin
         case(S)
             IDLE:       NS = RDW;
             RDW:        NS = (GLB_filter_valid_pre & (~GLB_filter_valid))   ?   RDIF3   :   RDW;
             RDIF3:      NS = (GLB_ifmap_valid_pre & (~GLB_ifmap_valid))     ?   RDIP    :   RDIF3;
-            RDIP:       NS = (GLB_ipsum_valid_pre & (~GLB_ipsum_valid))     ?   WROP    :   RDIP;
+            RDIP:       NS = (GLB_ipsum_valid_pre & (~GLB_ipsum_valid))     ?   WROP    :   RDIP; 
             WROP:       if((op_get_done) & (GLB_opsum_ready)) begin  // 1 -> 0
                             NS = (op_pass_done) ? IDLE : RDIF1;
                         end else begin
@@ -158,7 +158,7 @@ module PE_array #(
             default:    NS = IDLE;
         endcase
     end
-
+    
     // LN Config
     always@(posedge clk or posedge rst)begin
         if(rst)begin
@@ -167,7 +167,7 @@ module PE_array #(
             if(SET_LN)begin
                 LN_config_reg <= LN_config_in;
             end
-        end
+        end 
     end
 
     // SET YID
@@ -220,7 +220,7 @@ module PE_array #(
         end
     end
 
-    // XID 2D
+    // XID 2D 
     always@(*) begin
         for(i=0; i<NUMS_PE_ROW; i=i+1)begin
             for(j=0; j<NUMS_PE_COL; j=j+1)begin
@@ -242,7 +242,7 @@ module PE_array #(
     end
 
     // PE ifmap valid, filter valid
-    always@(*) begin
+    always@(*) begin 
         for(i=0; i<NUMS_PE_ROW; i=i+1)begin
             for(j=0; j<NUMS_PE_COL; j=j+1)begin
                 ifmap_valid[i][j]   = (ifmap_tx_2d[i][j]==ifmap_tag_X)   & (ifmap_ty[i]==ifmap_tag_Y)   & (GLB_ifmap_valid)  & (S==RDIF1 || S==RDIF3);
@@ -252,17 +252,17 @@ module PE_array #(
     end
 
     // PE ipsum, ipsum valid
-    always@(*) begin
+    always@(*) begin  
         for(j=0; j<NUMS_PE_COL; j=j+1)begin
             ipsum[0][j]         = GLB_data_in;
             ipsum_valid[0][j]   = (ipsum_tx_2d[0][j]==ipsum_tag_X) && (ipsum_ty[0]==ipsum_tag_Y) && (GLB_ipsum_valid) && (S==RDIP);
         end
         for(i=1; i<NUMS_PE_ROW; i=i+1)begin
             for(j=0; j<NUMS_PE_COL; j=j+1)begin
-                if(LN_config_reg[i-1])begin // connect to upper PE
+                if(LN_config_reg[i-1])begin // connect to upper PE 
                     ipsum[i][j]         = opsum[i-1][j];
                     ipsum_valid[i][j]   = opsum_valid[i-1][j];
-                end else begin              // connect to GLB
+                end else begin              // connect to GLB 
                     ipsum[i][j]         = GLB_data_in;
                     ipsum_valid[i][j]   = (ipsum_tx_2d[i][j]==ipsum_tag_X) && (ipsum_ty[i]==ipsum_tag_Y) && (GLB_ipsum_valid) && (S==RDIP);
                 end
@@ -271,13 +271,13 @@ module PE_array #(
     end
 
     // PE opsum ready
-    always@(*) begin
+    always@(*) begin 
         // inner rows
         for(i=0; i<NUMS_PE_ROW-1; i=i+1)begin
             for(j=0; j<NUMS_PE_COL; j=j+1)begin
-                if(LN_config_reg[i])begin // connect to lower PE
+                if(LN_config_reg[i])begin // connect to lower PE 
                     opsum_ready[i][j] = ipsum_ready[i+1][j];
-                end else begin
+                end else begin    
                     opsum_ready[i][j] = ((opsum_ty[i]==opsum_tag_Y) && (opsum_tx_2d[i][j]==opsum_tag_X) && GLB_opsum_ready);
                 end
             end
@@ -298,7 +298,7 @@ module PE_array #(
             GLB_filter_valid_pre    <= GLB_filter_valid;
             GLB_ifmap_valid_pre     <= GLB_ifmap_valid;
             GLB_ipsum_valid_pre     <= GLB_ipsum_valid;
-        end
+        end 
     end
 
     // Ouput data
@@ -310,15 +310,15 @@ module PE_array #(
                 if((opsum_ty[i]==opsum_tag_Y) && (opsum_tx_2d[i][j]==opsum_tag_X))begin
                     GLB_opsum_valid = opsum_valid[i][j];
                     GLB_data_out    = opsum[i][j];
-                end
+                end 
             end
         end
         // case(layer_info)
-        //     2'b00:begin
+        //     3'd0:begin
         //         GLB_opsum_valid = opsum_valid[{opsum_t_cnt, 1'b0} + opsum_t_cnt + 2][opsum_e_cnt];             // t*3,   e
         //         GLB_data_out    = opsum[{opsum_t_cnt, 1'b0} + opsum_t_cnt + 2][opsum_e_cnt];
         //     end
-        //     2'b01:begin
+        //     3'd1,3'd2,3'd3:begin
         //         GLB_opsum_valid = opsum_valid[NUMS_PE_ROW-1][opsum_e_cnt+{opsum_t_cnt[0],opsum_t_cnt[0]}];     // 11,      t*3+e
         //         GLB_data_out    = opsum[NUMS_PE_ROW-1][opsum_e_cnt+{opsum_t_cnt[0],opsum_t_cnt[0]}];
         //     end
