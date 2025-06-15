@@ -25,12 +25,16 @@ module PE (
     reg signed    [ 7:0]            ifmap_spad[0:3][0:2];           // q S      signed  8 bit
     reg signed    [ 7:0]            filter_spad[0:3][0:2][0:3];     // q S p    signed  8 bit
     reg signed    [`DATA_BITS-1:0]  psum_spad[0:3];                 // p        signed 32 bit
-    reg           [ 1:0]            q_cnt, p_cnt, s_cnt;
+    reg           [ 1:0]            q_cnt, s_cnt;
     reg           [ 7:0]            f_cnt;
     reg signed    [ 7:0]            mul_in0, mul_in1;
     reg signed    [31:0]            add_in0, add_in1;
     reg signed    [15:0]            mul_out_16;
     reg signed    [31:0]            add_out_32;
+
+    reg           [ 2:0]            p_cnt, in_p_cnt, out_p_cnt;
+
+    reg           [ 4:0]            opsum_valid_p;
 
     localparam  IDLE        =   3'd0;
     localparam  READ_W      =   3'd1;
@@ -38,7 +42,7 @@ module PE (
     localparam  READ_IP     =   3'd3;
     localparam  CAL_MUL     =   3'd4;
     localparam  READ_IF1    =   3'd5;
-    localparam  WRITE_OP    =   3'd6;
+    // localparam  WRITE_OP    =   3'd6;
 
     reg [2:0]   CS, NS;
 
@@ -49,30 +53,48 @@ module PE (
         case(CS)
             IDLE:       NS = READ_W;
             READ_W:     NS = (s_cnt==2'd2 && p_cnt==config_p && filter_valid)           ?   READ_IF3    :   READ_W;
-            READ_IF3:   NS = (s_cnt==2'd2 && ifmap_valid)                               ?   READ_IP     :   READ_IF3;
-            READ_IP:    NS = (p_cnt==config_p && ipsum_valid)                           ?   CAL_MUL     :   READ_IP;
-            CAL_MUL:    NS = ((s_cnt==2'd2) && (q_cnt==config_q) && (p_cnt==config_p))  ?   WRITE_OP    :   CAL_MUL;
-            READ_IF1:   NS = (ifmap_valid)                                              ?   READ_IP     :   READ_IF1;
-            WRITE_OP:   if(opsum_ready && (p_cnt==config_p)) begin
+
+
+            READ_IF3:   NS = (s_cnt==2'd2 && ifmap_valid)                               ?   CAL_MUL     :   READ_IF3;
+
+
+
+            //READ_IP:    NS = (p_cnt==config_p && ipsum_valid)                           ?   CAL_MUL     :   READ_IP;
+
+
+            CAL_MUL:    if((out_p_cnt=={1'b0,config_p}+1))begin
                             NS = (f_cnt==config_F) ?  IDLE : READ_IF1;
                         end else begin
-                            NS = WRITE_OP;
+                            NS = CAL_MUL;
                         end
+
+            READ_IF1:   NS = (ifmap_valid)                                              ?   CAL_MUL     :   READ_IF1;
+
+            // WRITE_OP:   if(opsum_ready && (p_cnt==config_p)) begin
+            //                 NS = (f_cnt==config_F) ?  IDLE : READ_IF1;
+            //             end else begin
+            //                 NS = WRITE_OP;
+            //             end
+
             default:    NS = IDLE;
+
         endcase
     end
 
     always@(*) begin
-        opsum           = psum_spad[p_cnt];
+        opsum           = psum_spad[out_p_cnt];
+        opsum_valid     = (CS==CAL_MUL) & (opsum_valid_p[out_p_cnt]);
+
         ifmap_ready     = (CS==READ_IF3 || CS==READ_IF1);
         filter_ready    = (CS==READ_W);
-        ipsum_ready     = (CS==READ_IP);
-        opsum_valid     = (CS==WRITE_OP);
+
+        ipsum_ready     = (CS==CAL_MUL) & (in_p_cnt<=config_p);
+
         mul_in0         = ifmap_spad[q_cnt][s_cnt];
         mul_in1         = filter_spad[q_cnt][s_cnt][p_cnt];
         mul_out_16      = mul_in0 * mul_in1;
-        add_in0         = (CS==CAL_MUL) ? {{16{mul_out_16[15]}},mul_out_16[15:0]} : ipsum;
-        add_in1         = psum_spad[p_cnt];
+        add_in0         = (ipsum_valid & ipsum_ready) ? ipsum               : {{16{mul_out_16[15]}},mul_out_16[15:0]};
+        add_in1         = (ipsum_valid & ipsum_ready) ? psum_spad[in_p_cnt] : psum_spad[p_cnt];
         add_out_32      = add_in0 + add_in1;
     end
 
@@ -95,9 +117,13 @@ module PE (
     always@(posedge clk or posedge rst) begin
         if(rst)begin
             q_cnt       <= 2'd0;
-            p_cnt       <= 2'd0;
             s_cnt       <= 2'd0;
             f_cnt       <= 8'd0;
+
+            p_cnt       <= 3'd0;
+            in_p_cnt    <= 3'd0;
+            out_p_cnt   <= 3'd0;
+            opsum_valid_p   <= 5'b00000;
 
             for(i=0;i<4;i=i+1)
                 for(j=0;j<3;j=j+1)
@@ -113,10 +139,13 @@ module PE (
         end else begin
             case(CS)
                 IDLE: begin
-                    q_cnt   <= 2'd0;
-                    p_cnt   <= 2'd0;
-                    s_cnt   <= 2'd0;
-                    f_cnt   <= 8'd0;
+                    q_cnt       <= 2'd0;
+                    p_cnt       <= 3'd0;
+                    in_p_cnt    <= 3'd0;
+                    out_p_cnt   <= 3'd0;
+                    s_cnt       <= 2'd0;
+                    f_cnt       <= 8'd0;
+                    opsum_valid_p   <= 5'b00000;
 
                     for(i=0;i<4;i=i+1)
                         for(j=0;j<3;j=j+1)
@@ -150,39 +179,54 @@ module PE (
                             ifmap_spad[qq][s_cnt] <= (ifmap[(qq<<3)+:8] ^ 8'b1000_0000);
                         s_cnt <= (s_cnt==2'd2) ? (2'd0) : (s_cnt + 2'd1);
                     end
-                end
-
-                READ_IP:begin
-                    // add_in0 = ipsum
-                    // add_in1 = psum_spad[p_cnt]
-                    if(ipsum_valid)begin
-                        psum_spad[p_cnt]    <= add_out_32;
-                        p_cnt               <= (p_cnt==config_p ? 2'd0 : p_cnt + 2'd1);
+                    for(pp=0;pp<4;pp=pp+1)begin
+                        psum_spad[pp]       <= `DATA_BITS'd0;
+                        in_p_cnt            <= 3'd0;
+                        p_cnt               <= 3'd0;
+                        out_p_cnt           <= 3'd0;
                     end
+                    opsum_valid_p   <= 5'b00000;
                 end
 
-                CAL_MUL:begin
+                // READ_IP:begin
+                //     // add_in0 = ipsum
+                //     // add_in1 = psum_spad[p_cnt]
+                //     if(ipsum_valid)begin
+                //         psum_spad[p_cnt]    <= add_out_32;
+                //         p_cnt               <= (p_cnt==config_p ? 2'd0 : p_cnt + 2'd1);
+                //     end
+                // end
+
+                CAL_MUL:begin   //
                     // mul_in0 = ifmap_spad[q_cnt][s_cnt]
                     // mul_in1 = filter_spad[q_cnt][s_cnt][p_cnt]
                     // add_in0 = mul_out_16
                     // add_in1 = psum_spad[p_cnt]
-                    psum_spad[p_cnt]    <= add_out_32;
-                    if(s_cnt==2'd2)begin
-                        s_cnt <= 2'd0;
-                        if(q_cnt==config_q)begin
-                            q_cnt <= 2'd0;
-                            p_cnt <= (p_cnt==config_p) ? (2'd0) : (p_cnt + 2'd1);
-                        end else begin
-                            q_cnt <= q_cnt + 2'd1;
-                        end
-                    end else begin
-                        s_cnt <= s_cnt + 2'd1;
-                    end
-                end
 
-                WRITE_OP:begin
-                    if(opsum_ready)begin
-                        p_cnt <= (p_cnt==config_p) ? (2'd0) : (p_cnt + 2'd1);
+                    if(opsum_valid & opsum_ready)begin
+                        out_p_cnt                <=  out_p_cnt + 1;
+                    end
+
+                    if(ipsum_valid & ipsum_ready)begin
+                        in_p_cnt                <=  in_p_cnt + 1;
+                        psum_spad[in_p_cnt]     <=  add_out_32;
+                        opsum_valid_p[in_p_cnt] <=  (p_cnt > in_p_cnt);
+                    end else begin
+                        if(p_cnt <= config_p)begin
+                            psum_spad[p_cnt]    <= add_out_32;
+                            if(s_cnt==2'd2)begin
+                                s_cnt <= 2'd0;
+                                if(q_cnt==config_q)begin
+                                    q_cnt                   <= 2'd0;
+                                    opsum_valid_p[p_cnt]    <= (in_p_cnt > p_cnt);
+                                    p_cnt                   <= p_cnt + 3'd1;
+                                end else begin
+                                    q_cnt <= q_cnt + 2'd1;
+                                end
+                            end else begin
+                                s_cnt <= s_cnt + 2'd1;
+                            end
+                        end
                     end
                 end
 
@@ -195,9 +239,15 @@ module PE (
                         end
                         f_cnt <= f_cnt + 8'd1;
                     end
-                    for(pp=0;pp<4;pp=pp+1)
-                        psum_spad[pp] <= `DATA_BITS'd0;
+                    for(pp=0;pp<4;pp=pp+1)begin
+                        psum_spad[pp]       <= `DATA_BITS'd0;
+                        in_p_cnt            <= 3'd0;
+                        p_cnt               <= 3'd0;
+                        out_p_cnt           <= 3'd0;
+                    end
+                    opsum_valid_p   <= 5'b00000;
                 end
+
             endcase
         end
     end

@@ -820,10 +820,10 @@ module  Controller(
         .op_get_done        (op_get_done        ),
         .op_pass_done       (op_pass_done       ),
         .PE_reset           (pass_done          ),
-
-        .opsum_e_cnt        (opsum_e_cnt        ),
-        .opsum_t_cnt        (opsum_t_cnt        ),
-        .layer_info         (layer_info_reg     )
+        .ker_feed_done      (ker_feed_done      ),
+        .if3_feed_done      (if3_feed_done      ),
+        .if1_feed_done      (if1_feed_done      ),
+        .ip_feed_done       (ip_feed_done       )
     );
     // PE array instance ==========================================================================================
 
