@@ -1,11 +1,10 @@
 rtlsim:
 	mkdir -p out_dat
-	vcs -full64 -R -sverilog testfixture.sv -debug_access+all \
-	PPU.v \
-	PE.v \
-	PE_array.v \
-	Controller.v \
-	+notimingcheck +define+TEST_ALL
+	vcs -full64 -R \
+	+incdir+../src/rtl \
+	-sverilog testfixture.sv  \
+	-debug_access+all +notimingcheck \
+	+define+TEST_ALL
 
 clean:
 	@rm -f *.fsdb

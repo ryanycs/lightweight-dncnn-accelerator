@@ -1,5 +1,9 @@
 `timescale 1ns/10ps
 `include "define.svh"
+`include "Controller.v"
+`include "PE.v"
+`include "PE_array.v"
+`include "PPU.v"
 
 `define CYCLE           20.0
 // `define END_CYCLE       ((3*500+20)*(10**6))    // L0 + L1 *3 + L4
