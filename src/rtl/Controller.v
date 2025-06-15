@@ -21,14 +21,14 @@ module  Controller(
 
     localparam LAYERIDLE     = 5'd0,  SETLN = 5'd1, SETXID = 5'd2, SETYID = 5'd3;
     localparam PASSIDLE      = 5'd4;
-    localparam FEEDF_ADDR    = 5'd5,  FEEDFILTER    = 5'd6; 
-    localparam FEEDIF3_ADDR0 = 5'd7,  FEEDIF3_ADDR1 = 5'd8,  FEEDIF3    = 5'd9; 
-    localparam FEEDIP_ADDR0  = 5'd10, FEEDIP_ADDR1  = 5'd11, FEEDIPSUM  = 5'd12; 
-    localparam FEEDIF1_ADDR0 = 5'd13, FEEDIF1_ADDR1 = 5'd14, FEEDIF1    = 5'd15; 
+    localparam FEEDF_ADDR    = 5'd5,  FEEDFILTER    = 5'd6;
+    localparam FEEDIF3_ADDR0 = 5'd7,  FEEDIF3_ADDR1 = 5'd8,  FEEDIF3    = 5'd9;
+    localparam FEEDIP_ADDR0  = 5'd10, FEEDIP_ADDR1  = 5'd11, FEEDIPSUM  = 5'd12;
+    localparam FEEDIF1_ADDR0 = 5'd13, FEEDIF1_ADDR1 = 5'd14, FEEDIF1    = 5'd15;
     localparam GETOPADDR     = 5'd16, GETOPSUM      = 5'd17;
     localparam PASSDONE      = 5'd18;
 
-    // flip-flop  
+    // flip-flop
     reg  [4:0]  CS, NS;
 
     // Config =====================================================================================================
@@ -37,47 +37,47 @@ module  Controller(
     reg  [3:0]  yid_cnt;
     // Config =====================================================================================================
 
-    integer     i, j; 
+    integer     i, j;
 
     // PE array signals ===========================================================================================
-    wire                                        SET_XID;                         
-    wire                                        SET_YID;                      
-    wire                                        SET_LN;                  
-    wire [`NUMS_PE_ROW-2:0]                     LN_config_in;           
-    wire [`NUMS_PE_ROW * `NUMS_PE_COL-1:0]      PE_en;              
-    wire [`CONFIG_SIZE-1:0]                     PE_config; 
-    wire [`XID_BITS-1:0]                        ifmap_XID_scan_in;  
-    wire [`XID_BITS-1:0]                        filter_XID_scan_in; 
-    wire [`XID_BITS-1:0]                        ipsum_XID_scan_in;  
-    wire [`XID_BITS-1:0]                        opsum_XID_scan_in;  
-    wire [`YID_BITS-1:0]                        ifmap_YID_scan_in;  
-    wire [`YID_BITS-1:0]                        filter_YID_scan_in; 
-    wire [`YID_BITS-1:0]                        ipsum_YID_scan_in;  
-    wire [`YID_BITS-1:0]                        opsum_YID_scan_in;  
-    wire [`XID_BITS-1:0]                        ifmap_tag_X;        
-    wire [`YID_BITS-1:0]                        ifmap_tag_Y;        
-    wire [`XID_BITS-1:0]                        filter_tag_X;       
-    wire [`YID_BITS-1:0]                        filter_tag_Y;       
-    wire [`XID_BITS-1:0]                        ipsum_tag_X;        
-    wire [`YID_BITS-1:0]                        ipsum_tag_Y;        
-    wire [`XID_BITS-1:0]                        opsum_tag_X;        
-    wire [`YID_BITS-1:0]                        opsum_tag_Y;  
-    wire                                        GLB_ifmap_valid;   
-    wire                                        GLB_ifmap_ready;    
-    wire                                        GLB_filter_valid;   
-    wire                                        GLB_filter_ready;   
-    wire                                        GLB_ipsum_valid;    
-    wire                                        GLB_ipsum_ready;    
-    reg  [`DATA_SIZE-1:0]                       GLB_data_in;        
-    wire                                        GLB_opsum_valid;    
-    wire                                        GLB_opsum_ready;    
-    wire [`DATA_SIZE-1:0]                       GLB_data_out;   
+    wire                                        SET_XID;
+    wire                                        SET_YID;
+    wire                                        SET_LN;
+    wire [`NUMS_PE_ROW-2:0]                     LN_config_in;
+    wire [`NUMS_PE_ROW * `NUMS_PE_COL-1:0]      PE_en;
+    wire [`CONFIG_SIZE-1:0]                     PE_config;
+    wire [`XID_BITS-1:0]                        ifmap_XID_scan_in;
+    wire [`XID_BITS-1:0]                        filter_XID_scan_in;
+    wire [`XID_BITS-1:0]                        ipsum_XID_scan_in;
+    wire [`XID_BITS-1:0]                        opsum_XID_scan_in;
+    wire [`YID_BITS-1:0]                        ifmap_YID_scan_in;
+    wire [`YID_BITS-1:0]                        filter_YID_scan_in;
+    wire [`YID_BITS-1:0]                        ipsum_YID_scan_in;
+    wire [`YID_BITS-1:0]                        opsum_YID_scan_in;
+    wire [`XID_BITS-1:0]                        ifmap_tag_X;
+    wire [`YID_BITS-1:0]                        ifmap_tag_Y;
+    wire [`XID_BITS-1:0]                        filter_tag_X;
+    wire [`YID_BITS-1:0]                        filter_tag_Y;
+    wire [`XID_BITS-1:0]                        ipsum_tag_X;
+    wire [`YID_BITS-1:0]                        ipsum_tag_Y;
+    wire [`XID_BITS-1:0]                        opsum_tag_X;
+    wire [`YID_BITS-1:0]                        opsum_tag_Y;
+    wire                                        GLB_ifmap_valid;
+    wire                                        GLB_ifmap_ready;
+    wire                                        GLB_filter_valid;
+    wire                                        GLB_filter_ready;
+    wire                                        GLB_ipsum_valid;
+    wire                                        GLB_ipsum_ready;
+    reg  [`DATA_SIZE-1:0]                       GLB_data_in;
+    wire                                        GLB_opsum_valid;
+    wire                                        GLB_opsum_ready;
+    wire [`DATA_SIZE-1:0]                       GLB_data_out;
     // PE array signals ===========================================================================================
 
     // PPU signals ================================================================================================
-    reg  [3:0]                                  PPU_scaling_factor;                         
-    reg                                         PPU_relu_en;            
-    wire [7:0]                                  PPU_data_out;           
+    reg  [3:0]                                  PPU_scaling_factor;
+    reg                                         PPU_relu_en;
+    wire [7:0]                                  PPU_data_out;
     // PPU signals ================================================================================================
 
     // ID LIST constant ===========================================================================================
@@ -85,10 +85,10 @@ module  Controller(
     reg [3:0]   IF_YID[0:11], W_YID[0:11], IP_YID[0:11], OP_YID[0:11];
     // ID LIST constant ===========================================================================================
 
-    // mapping parameters lim ===================================================================================== 
+    // mapping parameters lim =====================================================================================
     reg  [2:0]  e_lim;
     reg  [1:0]  p_lim, q_lim, r_lim, t_lim;
-    reg  [2:0]  m_shift_value; 
+    reg  [2:0]  m_shift_value;
     // mapping parameters lim =====================================================================================
 
     // shape parameters lim (for pass ) ===========================================================================
@@ -97,9 +97,9 @@ module  Controller(
     reg  [1:0]  tile_C_cnt; //      0~0 (1/1)            0~3 (64/16)         0~3 (64/16)
     reg  [6:0]  tile_E_cnt; //      0~41 +1 (256/6)      0~84 +1 (256/3)     0~41 +1 (256/6)
     //                              42...4               85...1              42...4
-    reg  [2:0]  M_lim; 
-    reg  [1:0]  C_lim;      
-    reg  [6:0]  E_lim;      
+    reg  [2:0]  M_lim;
+    reg  [1:0]  C_lim;
+    reg  [6:0]  E_lim;
     wire        tile_M_done     = (tile_M_cnt == M_lim);
     wire        tile_C_done     = (tile_C_cnt == C_lim);
     wire        tile_E_done     = (tile_E_cnt == E_lim);
@@ -124,14 +124,14 @@ module  Controller(
     wire        ker_w_done      = (ker_w_cnt[1]);
     wire        ker_h_done      = (ker_h_cnt[1]);
     wire        ker_r_done      = (ker_r_cnt == r_lim);
-    wire        ker_p_done      = (ker_p_cnt == p_lim); 
-    wire        ker_t_done      = (ker_t_cnt == t_lim); 
+    wire        ker_p_done      = (ker_p_cnt == p_lim);
+    wire        ker_t_done      = (ker_t_cnt == t_lim);
     wire        ker_feed_done   = (ker_w_done & ker_h_done & ker_r_done & ker_p_done & ker_t_done & GLB_filter_ready);
     // feed weight ================================================================================================
 
-    // feed ifmap =================================================================================================                  
+    // feed ifmap =================================================================================================
     // (q) -> w -> h -> r
-    // tag y = if_r_cnt 
+    // tag y = if_r_cnt
     // tag x = if_h_cnt
     //                              LFIRST  LMID    LLAST
     reg  [1:0]  if_w_cnt;     //    0~2     0~2     0~2
@@ -154,11 +154,11 @@ module  Controller(
     wire        if1_feed_done   = (if_h_done & if_r_done & GLB_ifmap_ready);
     // feed ifmap =================================================================================================
 
-    // feed ipsum counter ========================================================================================= 
+    // feed ipsum counter =========================================================================================
     // e -> p -> t
     // L0 : tag y = {2'd0, ipsum_t_cnt}     tag x = ipsum_e_cnt
     // L13: tag y = {4'd0}                  tag x = {ipsum_t_cnt[0], ipsum_t_cnt[0]} + {ipsum_e_cnt}
-    // L4:  tag y = {4'd0}                  tag x = ipsum_e_cnt        
+    // L4:  tag y = {4'd0}                  tag x = ipsum_e_cnt
     //                                  LFIRST  LMID    LLAST
     reg  [2:0]  ipsum_e_cnt;        //  0~5     0~2     0~5
     reg  [1:0]  ipsum_p_cnt;        //  0~3     0~3     0~0
@@ -187,7 +187,7 @@ module  Controller(
     wire        op_p_done       = (opsum_p_cnt == p_lim);
     wire        op_t_done       = (opsum_t_cnt == t_lim);
     wire        op_F_done       = (opsum_F_cnt == 8'd255);
-    wire        op_get_done     = (op_e_done & op_p_done & op_t_done & GLB_opsum_valid);    // e p t 
+    wire        op_get_done     = (op_e_done & op_p_done & op_t_done & GLB_opsum_valid);    // e p t
 
     wire        op_pass_done    = (op_get_done & op_F_done);                                // e p t F
     wire        layer_done      = (tile_M_done & tile_C_done & tile_E_done);
@@ -225,7 +225,7 @@ module  Controller(
             GETOPADDR:      NS = GETOPSUM;
             GETOPSUM:       if(op_get_done) NS = op_pass_done ? PASSDONE : FEEDIF1_ADDR0;
                             else            NS = GETOPSUM;
-            PASSDONE:       NS = layer_done             ?   LAYERIDLE       :   PASSIDLE;      
+            PASSDONE:       NS = layer_done             ?   LAYERIDLE       :   PASSIDLE;
             default:        NS = LAYERIDLE;
         endcase
     end
@@ -237,29 +237,29 @@ module  Controller(
             layer_info_reg  <=  3'd0;
             xid_cnt         <=  7'd0;   // 0~71
             yid_cnt         <=  4'd0;   // 0~11
-            ker_w_cnt       <=  2'd0;   // 0~2 
-            ker_h_cnt       <=  2'd0;   // 0~2   
-            ker_r_cnt       <=  2'd0;   // 0~3    
-            ker_p_cnt       <=  2'd0;   // 0~3    
-            ker_t_cnt       <=  2'd0;   // 0~3  
+            ker_w_cnt       <=  2'd0;   // 0~2
+            ker_h_cnt       <=  2'd0;   // 0~2
+            ker_r_cnt       <=  2'd0;   // 0~3
+            ker_p_cnt       <=  2'd0;   // 0~3
+            ker_t_cnt       <=  2'd0;   // 0~3
 
-            if_w_cnt        <=  2'd0;   // 0~2     
-            if_h_cnt        <=  3'd0;   // 0~7     
-            if_r_cnt        <=  2'd0;   // 0~3 
+            if_w_cnt        <=  2'd0;   // 0~2
+            if_h_cnt        <=  3'd0;   // 0~7
+            if_r_cnt        <=  2'd0;   // 0~3
             if_w_cnt_p1     <=  2'd0;   // 0~2
             if_h_cnt_p1     <=  3'd0;   // 0~7
             if_r_cnt_p1     <=  2'd0;   // 0~3
 
-            ipsum_e_cnt     <=  3'd0;   // 0~5 
-            ipsum_p_cnt     <=  2'd0;   // 0~3 
-            ipsum_t_cnt     <=  2'd0;   // 0~3  
-            ipsum_e_cnt_p1  <=  3'd0;   // 0~5 
-            ipsum_p_cnt_p1  <=  2'd0;   // 0~3 
-            ipsum_t_cnt_p1  <=  2'd0;   // 0~3 
+            ipsum_e_cnt     <=  3'd0;   // 0~5
+            ipsum_p_cnt     <=  2'd0;   // 0~3
+            ipsum_t_cnt     <=  2'd0;   // 0~3
+            ipsum_e_cnt_p1  <=  3'd0;   // 0~5
+            ipsum_p_cnt_p1  <=  2'd0;   // 0~3
+            ipsum_t_cnt_p1  <=  2'd0;   // 0~3
 
-            opsum_e_cnt     <=  3'd0;   // 0~5  
-            opsum_p_cnt     <=  2'd0;   // 0~3 
-            opsum_t_cnt     <=  2'd0;   // 0~3  
+            opsum_e_cnt     <=  3'd0;   // 0~5
+            opsum_p_cnt     <=  2'd0;   // 0~3
+            opsum_t_cnt     <=  2'd0;   // 0~3
             opsum_F_cnt     <=  8'd0;   // 0~255
 
             tile_M_cnt      <=  3'd0;   //      0~3 (64/16)          0~7 (64/8)          0~0 (1/1)
@@ -274,20 +274,20 @@ module  Controller(
                     end
                     xid_cnt         <=  7'd0;   // 0~71
                     yid_cnt         <=  4'd0;   // 0~11
-                    ker_w_cnt       <=  2'd0;   // 0~2 
-                    ker_h_cnt       <=  2'd0;   // 0~2   
-                    ker_r_cnt       <=  2'd0;   // 0~3    
-                    ker_p_cnt       <=  2'd0;   // 0~3    
-                    ker_t_cnt       <=  2'd0;   // 0~3    
-                    if_w_cnt        <=  2'd0;   // 0~2     
-                    if_h_cnt        <=  3'd0;   // 0~7     
-                    if_r_cnt        <=  2'd0;   // 0~3     
-                    ipsum_e_cnt     <=  3'd0;   // 0~5 
-                    ipsum_p_cnt     <=  2'd0;   // 0~3 
-                    ipsum_t_cnt     <=  2'd0;   // 0~3  
-                    opsum_e_cnt     <=  3'd0;   // 0~5  
-                    opsum_p_cnt     <=  2'd0;   // 0~3 
-                    opsum_t_cnt     <=  2'd0;   // 0~3  
+                    ker_w_cnt       <=  2'd0;   // 0~2
+                    ker_h_cnt       <=  2'd0;   // 0~2
+                    ker_r_cnt       <=  2'd0;   // 0~3
+                    ker_p_cnt       <=  2'd0;   // 0~3
+                    ker_t_cnt       <=  2'd0;   // 0~3
+                    if_w_cnt        <=  2'd0;   // 0~2
+                    if_h_cnt        <=  3'd0;   // 0~7
+                    if_r_cnt        <=  2'd0;   // 0~3
+                    ipsum_e_cnt     <=  3'd0;   // 0~5
+                    ipsum_p_cnt     <=  2'd0;   // 0~3
+                    ipsum_t_cnt     <=  2'd0;   // 0~3
+                    opsum_e_cnt     <=  3'd0;   // 0~5
+                    opsum_p_cnt     <=  2'd0;   // 0~3
+                    opsum_t_cnt     <=  2'd0;   // 0~3
                     opsum_F_cnt     <=  8'd0;   // 0~255
                     tile_M_cnt      <=  3'd0;   // 0~3 (64/16)          0~7 (64/8)          0~0 (1/1)
                     tile_C_cnt      <=  2'd0;   // 0~0 (1/1)            0~3 (64/16)         0~3 (64/16)
@@ -306,26 +306,26 @@ module  Controller(
                 PASSIDLE:begin
                     // PE_en        = 1
                     // PE_config    = {p_lim, q_lim, 8'd255};
-                    ker_w_cnt       <=  2'd0; 
-                    ker_h_cnt       <=  2'd0;   
-                    ker_r_cnt       <=  2'd0;    
-                    ker_p_cnt       <=  2'd0;    
-                    ker_t_cnt       <=  2'd0;    
+                    ker_w_cnt       <=  2'd0;
+                    ker_h_cnt       <=  2'd0;
+                    ker_r_cnt       <=  2'd0;
+                    ker_p_cnt       <=  2'd0;
+                    ker_t_cnt       <=  2'd0;
 
-                    if_w_cnt        <=  2'd0;     
-                    if_h_cnt        <=  3'd0;     
-                    if_r_cnt        <=  2'd0;    
-                    if_w_cnt_p1     <=  2'd1;     
-                    if_h_cnt_p1     <=  3'd0;     
-                    if_r_cnt_p1     <=  2'd0; 
+                    if_w_cnt        <=  2'd0;
+                    if_h_cnt        <=  3'd0;
+                    if_r_cnt        <=  2'd0;
+                    if_w_cnt_p1     <=  2'd1;
+                    if_h_cnt_p1     <=  3'd0;
+                    if_r_cnt_p1     <=  2'd0;
 
-                    ipsum_e_cnt     <=  3'd0; 
-                    ipsum_p_cnt     <=  2'd0; 
-                    ipsum_t_cnt     <=  2'd0;  
+                    ipsum_e_cnt     <=  3'd0;
+                    ipsum_p_cnt     <=  2'd0;
+                    ipsum_t_cnt     <=  2'd0;
 
-                    opsum_e_cnt     <=  3'd0;  
-                    opsum_p_cnt     <=  2'd0; 
-                    opsum_t_cnt     <=  2'd0;  
+                    opsum_e_cnt     <=  3'd0;
+                    opsum_p_cnt     <=  2'd0;
+                    opsum_t_cnt     <=  2'd0;
                     opsum_F_cnt     <=  8'd0;
 
                     bram_b_addr     <=  `GLB_WADDR_OFFSET;
@@ -392,7 +392,7 @@ module  Controller(
                             if_w_cnt <= if_w_cnt + 2'd1;
                         end
                     end
-                    // for bram addr 
+                    // for bram addr
                     if(GLB_ifmap_ready)begin
                         if(if_w_p1_done)begin
                             if_w_cnt_p1 <= 2'd0;
@@ -420,16 +420,16 @@ module  Controller(
                     end
                 end
                 FEEDIP_ADDR0:begin       // M_idx * pt * e * 256 + F_idx
-                    if((|layer_info_reg[1:0]) && (tile_C_cnt==2'd0))begin   
+                    if((|layer_info_reg[1:0]) && (tile_C_cnt==2'd0))begin
                         bram_b_addr     <= `GLB_BIAS_OFFSET;
                     end else begin
                         bram_b_addr     <= `GLB_OPADDR_OFFSET + {{{{(tile_M_mul_pt) * (e_lim + 3'd1)}, 8'd0} + opsum_F_cnt}, 2'd0};
                     end
-                    ipsum_e_cnt     <=  3'd0; 
-                    ipsum_p_cnt     <=  2'd0; 
-                    ipsum_t_cnt     <=  2'd0; 
+                    ipsum_e_cnt     <=  3'd0;
+                    ipsum_p_cnt     <=  2'd0;
+                    ipsum_t_cnt     <=  2'd0;
 
-                    if(e_lim==3'd0) 
+                    if(e_lim==3'd0)
                         ipsum_e_cnt_p1  <=  3'd0;
                     else
                         ipsum_e_cnt_p1  <=  3'd1;
@@ -439,13 +439,13 @@ module  Controller(
                 end
                 FEEDIP_ADDR1:begin
                     if(GLB_ipsum_ready)begin
-                        if((|layer_info_reg[1:0]) && (tile_C_cnt==2'd0))begin   
+                        if((|layer_info_reg[1:0]) && (tile_C_cnt==2'd0))begin
                             if(ip_e_p1_done)begin
                                 bram_b_addr <= bram_b_addr + {  9'd1, 2'd0};
                             end
                         end else begin
                             bram_b_addr <= bram_b_addr + {9'd256, 2'd0};    // +256;
-                        end    
+                        end
                     end
                 end
                 FEEDIPSUM:begin // e -> p -> t
@@ -467,7 +467,7 @@ module  Controller(
                             ipsum_e_cnt <= ipsum_e_cnt + 3'd1;
                         end
                     end
-                    // for bram addr 
+                    // for bram addr
                     if(GLB_ipsum_ready)begin
                         if(ip_e_p1_done)begin
                             ipsum_e_cnt_p1 <= 3'd0;
@@ -487,7 +487,7 @@ module  Controller(
                     end
                     // bram addr
                     if(GLB_ipsum_ready)begin
-                        if((|layer_info_reg[1:0]) && (tile_C_cnt==2'd0))begin   
+                        if((|layer_info_reg[1:0]) && (tile_C_cnt==2'd0))begin
                             if(ip_e_p1_done)begin
                                 bram_b_addr <= bram_b_addr + {  9'd1, 2'd0};
                             end
@@ -497,13 +497,13 @@ module  Controller(
                     end
                 end
                 FEEDIF1_ADDR0:begin
-                    bram_b_addr     <=  `GLB_IFADDR_OFFSET + {opsum_F_cnt + 8'd1, 2'd0};    // F_cnt 255 
-                    if_w_cnt        <=  2'd0;     
-                    if_h_cnt        <=  3'd0;     
-                    if_r_cnt        <=  2'd0;   
-                    if_w_cnt_p1     <=  2'd0;     
-                    if_h_cnt_p1     <=  3'd1;  
-                    if_r_cnt_p1     <=  2'd0; 
+                    bram_b_addr     <=  `GLB_IFADDR_OFFSET + {opsum_F_cnt + 8'd1, 2'd0};    // F_cnt 255
+                    if_w_cnt        <=  2'd0;
+                    if_h_cnt        <=  3'd0;
+                    if_r_cnt        <=  2'd0;
+                    if_w_cnt_p1     <=  2'd0;
+                    if_h_cnt_p1     <=  3'd1;
+                    if_r_cnt_p1     <=  2'd0;
                 end
                 FEEDIF1_ADDR1:begin
                     bram_b_addr     <=  bram_b_addr + {9'd256, 2'd0};    // next row
@@ -523,11 +523,11 @@ module  Controller(
                         end
                     end
                     if(GLB_ifmap_ready)begin
-                        bram_b_addr <= bram_b_addr + {9'd256, 2'd0};    
+                        bram_b_addr <= bram_b_addr + {9'd256, 2'd0};
                     end
                 end
                 GETOPADDR:begin // M_idx * p * t * e + F
-                    // bram_b_addr     <= `GLB_OPADDR_OFFSET + {{{{(tile_M_cnt << (m_shift_value)) * (e_lim + 3'd1)}, 8'd0} + opsum_F_cnt}, 2'd0}; 
+                    // bram_b_addr     <= `GLB_OPADDR_OFFSET + {{{{(tile_M_cnt << (m_shift_value)) * (e_lim + 3'd1)}, 8'd0} + opsum_F_cnt}, 2'd0};
                     bram_b_addr     <= `GLB_OPADDR_OFFSET + {{{{(tile_M_mul_pt) * (e_lim + 3'd1)}, 8'd0} + opsum_F_cnt}, 2'd0};
                     opsum_e_cnt     <= 3'd0;
                     opsum_p_cnt     <= 2'd0;
@@ -662,9 +662,9 @@ module  Controller(
                 q_lim           = 2'd0;
                 r_lim           = 2'd0;
                 t_lim           = 2'd3;
-                M_lim           = 3'd3; 
-                C_lim           = 2'd0;      
-                E_lim           = 7'd42; 
+                M_lim           = 3'd3;
+                C_lim           = 2'd0;
+                E_lim           = 7'd42;
                 m_shift_value   = 3'd4;
             end
             L1,L2,L3:begin
@@ -673,9 +673,9 @@ module  Controller(
                 q_lim           = 2'd3;
                 r_lim           = 2'd3;
                 t_lim           = 2'd1;
-                M_lim           = 3'd7; 
-                C_lim           = 2'd3;      
-                E_lim           = 7'd85; 
+                M_lim           = 3'd7;
+                C_lim           = 2'd3;
+                E_lim           = 7'd85;
                 m_shift_value   = 3'd3;
             end
             default:begin
@@ -684,9 +684,9 @@ module  Controller(
                 q_lim           = 2'd3;
                 r_lim           = 2'd3;
                 t_lim           = 2'd0;
-                M_lim           = 3'd0; 
-                C_lim           = 2'd3;      
-                E_lim           = 7'd42; 
+                M_lim           = 3'd0;
+                C_lim           = 2'd3;
+                E_lim           = 7'd42;
                 m_shift_value   = 3'd0;
             end
         endcase
@@ -711,21 +711,21 @@ module  Controller(
     assign ipsum_YID_scan_in    = IP_YID[yid_cnt];
     assign opsum_YID_scan_in    = OP_YID[yid_cnt];
     // TAG
-    assign ifmap_tag_X          = if_h_cnt;   
-    assign ifmap_tag_Y          = {2'b00, if_r_cnt};    
-    assign filter_tag_X         = {2'd0, ((|layer_info_reg[1:0]) ? ker_t_cnt[0] : 1'b0)};            
+    assign ifmap_tag_X          = if_h_cnt;
+    assign ifmap_tag_Y          = {2'b00, if_r_cnt};
+    assign filter_tag_X         = {2'd0, ((|layer_info_reg[1:0]) ? ker_t_cnt[0] : 1'b0)};
 
-    // assign filter_tag_Y         = {(layer_info_reg==L0  ? ker_t_cnt : ker_r_cnt), ker_h_cnt};     // t*3 + h 
+    // assign filter_tag_Y         = {(layer_info_reg==L0  ? ker_t_cnt : ker_r_cnt), ker_h_cnt};     // t*3 + h
     assign filter_tag_Y         = (layer_info_reg==L0  ? {ker_t_cnt + {1'b0, ker_t_cnt, 1'b0}} : {ker_r_cnt + {1'b0, ker_r_cnt, 1'b0}}) + {2'b00, ker_h_cnt};     // t*3+h  or  r*3+h 4 bits
 
-    assign ipsum_tag_X          = ((|layer_info_reg[1:0])) ? ({ipsum_t_cnt[0], ipsum_t_cnt[0]} + {ipsum_e_cnt}) : ipsum_e_cnt; 
-    assign ipsum_tag_Y          = {2'd0, (layer_info_reg==L0 ? ipsum_t_cnt : 2'd0)};  
-    assign opsum_tag_X          = ((|layer_info_reg[1:0])) ? ({opsum_t_cnt[0], opsum_t_cnt[0]} + {opsum_e_cnt}) : opsum_e_cnt; 
+    assign ipsum_tag_X          = ((|layer_info_reg[1:0])) ? ({ipsum_t_cnt[0], ipsum_t_cnt[0]} + {ipsum_e_cnt}) : ipsum_e_cnt;
+    assign ipsum_tag_Y          = {2'd0, (layer_info_reg==L0 ? ipsum_t_cnt : 2'd0)};
+    assign opsum_tag_X          = ((|layer_info_reg[1:0])) ? ({opsum_t_cnt[0], opsum_t_cnt[0]} + {opsum_e_cnt}) : opsum_e_cnt;
     assign opsum_tag_Y          = {2'd0, (layer_info_reg==L0 ? opsum_t_cnt : 2'd0)};
     // Handshake
-    assign GLB_ifmap_valid      = (CS==FEEDIF1 || CS==FEEDIF3);             
-    assign GLB_filter_valid     = (CS==FEEDFILTER);                           
-    assign GLB_ipsum_valid      = (CS==FEEDIPSUM);    
+    assign GLB_ifmap_valid      = (CS==FEEDIF1 || CS==FEEDIF3);
+    assign GLB_filter_valid     = (CS==FEEDFILTER);
+    assign GLB_ipsum_valid      = (CS==FEEDIPSUM);
     assign GLB_opsum_ready      = (CS==GETOPSUM);
 
     always@(*)begin
@@ -735,7 +735,7 @@ module  Controller(
         else if(CS==FEEDIPSUM && tile_C_cnt==2'd0 && (~|layer_info_reg[1:0]))   GLB_data_in          = `DATA_SIZE'd0;   //  bias = 0
         else                                                                    GLB_data_in          = (bram_b_dout);
     end
-    
+
     // PE ARRAY signals ======================================================================================================
 
     // BRAM ==================================================================================================================
@@ -743,11 +743,11 @@ module  Controller(
     always @(*) begin
         if(CS==GETOPSUM && GLB_opsum_valid)begin
             if(tile_C_done)begin
-                bram_b_din = (PPU_data_out << {opsum_p_cnt, 3'd0});                                    
+                bram_b_din = (PPU_data_out << {opsum_p_cnt, 3'd0});
                 bram_b_web =  4'b0001 << opsum_p_cnt;
             end else begin
                 bram_b_din = GLB_data_out;
-                bram_b_web = 4'b1111; 
+                bram_b_web = 4'b1111;
             end
         end else begin
             bram_b_din = GLB_data_out;
@@ -769,53 +769,53 @@ module  Controller(
     end
     // PPU signals ===========================================================================================================
 
-    // TOP signals =========================================================================================================== 
+    // TOP signals ===========================================================================================================
     assign pass_done            = (CS==PASSDONE);
     assign pass_ready           = (CS==PASSIDLE);
-    // TOP signals =========================================================================================================== 
+    // TOP signals ===========================================================================================================
 
     // PE array instance ==========================================================================================
     PE_array #(
-        .NUMS_PE_ROW        (`NUMS_PE_ROW       ),  
+        .NUMS_PE_ROW        (`NUMS_PE_ROW       ),
         .NUMS_PE_COL        (`NUMS_PE_COL       ),
-        .XID_BITS           (`XID_BITS          ),  
-        .YID_BITS           (`YID_BITS          ),  
-        .DATA_SIZE          (`DATA_BITS         ),      
-        .CONFIG_SIZE        (`CONFIG_SIZE       )  
+        .XID_BITS           (`XID_BITS          ),
+        .YID_BITS           (`YID_BITS          ),
+        .DATA_SIZE          (`DATA_BITS         ),
+        .CONFIG_SIZE        (`CONFIG_SIZE       )
     ) PE_array_u (
-        .clk                (clk                ),    
-        .rst                (rst                ),    
-        .SET_XID            (SET_XID            ),      
-        .SET_YID            (SET_YID            ),    
-        .ifmap_XID_scan_in  (ifmap_XID_scan_in  ),                
-        .filter_XID_scan_in (filter_XID_scan_in ),                
-        .ipsum_XID_scan_in  (ipsum_XID_scan_in  ),                
-        .opsum_XID_scan_in  (opsum_XID_scan_in  ),                
-        .ifmap_YID_scan_in  (ifmap_YID_scan_in  ),                
-        .filter_YID_scan_in (filter_YID_scan_in ),                
-        .ipsum_YID_scan_in  (ipsum_YID_scan_in  ),                
-        .opsum_YID_scan_in  (opsum_YID_scan_in  ),                
-        .SET_LN             (SET_LN             ),    
-        .LN_config_in       (LN_config_in       ),            
-        .PE_en              (PE_en              ),    
-        .PE_config          (PE_config          ),        
-        .ifmap_tag_X        (ifmap_tag_X        ),            
-        .ifmap_tag_Y        (ifmap_tag_Y        ),            
-        .filter_tag_X       (filter_tag_X       ),            
-        .filter_tag_Y       (filter_tag_Y       ),            
-        .ipsum_tag_X        (ipsum_tag_X        ),            
-        .ipsum_tag_Y        (ipsum_tag_Y        ),            
-        .opsum_tag_X        (opsum_tag_X        ),            
-        .opsum_tag_Y        (opsum_tag_Y        ),            
-        .GLB_ifmap_valid    (GLB_ifmap_valid    ),                
-        .GLB_ifmap_ready    (GLB_ifmap_ready    ),                
-        .GLB_filter_valid   (GLB_filter_valid   ),                
-        .GLB_filter_ready   (GLB_filter_ready   ),                
-        .GLB_ipsum_valid    (GLB_ipsum_valid    ),                
-        .GLB_ipsum_ready    (GLB_ipsum_ready    ),                
-        .GLB_data_in        (GLB_data_in        ),            
-        .GLB_opsum_valid    (GLB_opsum_valid    ),                
-        .GLB_opsum_ready    (GLB_opsum_ready    ),                
+        .clk                (clk                ),
+        .rst                (rst                ),
+        .SET_XID            (SET_XID            ),
+        .SET_YID            (SET_YID            ),
+        .ifmap_XID_scan_in  (ifmap_XID_scan_in  ),
+        .filter_XID_scan_in (filter_XID_scan_in ),
+        .ipsum_XID_scan_in  (ipsum_XID_scan_in  ),
+        .opsum_XID_scan_in  (opsum_XID_scan_in  ),
+        .ifmap_YID_scan_in  (ifmap_YID_scan_in  ),
+        .filter_YID_scan_in (filter_YID_scan_in ),
+        .ipsum_YID_scan_in  (ipsum_YID_scan_in  ),
+        .opsum_YID_scan_in  (opsum_YID_scan_in  ),
+        .SET_LN             (SET_LN             ),
+        .LN_config_in       (LN_config_in       ),
+        .PE_en              (PE_en              ),
+        .PE_config          (PE_config          ),
+        .ifmap_tag_X        (ifmap_tag_X        ),
+        .ifmap_tag_Y        (ifmap_tag_Y        ),
+        .filter_tag_X       (filter_tag_X       ),
+        .filter_tag_Y       (filter_tag_Y       ),
+        .ipsum_tag_X        (ipsum_tag_X        ),
+        .ipsum_tag_Y        (ipsum_tag_Y        ),
+        .opsum_tag_X        (opsum_tag_X        ),
+        .opsum_tag_Y        (opsum_tag_Y        ),
+        .GLB_ifmap_valid    (GLB_ifmap_valid    ),
+        .GLB_ifmap_ready    (GLB_ifmap_ready    ),
+        .GLB_filter_valid   (GLB_filter_valid   ),
+        .GLB_filter_ready   (GLB_filter_ready   ),
+        .GLB_ipsum_valid    (GLB_ipsum_valid    ),
+        .GLB_ipsum_ready    (GLB_ipsum_ready    ),
+        .GLB_data_in        (GLB_data_in        ),
+        .GLB_opsum_valid    (GLB_opsum_valid    ),
+        .GLB_opsum_ready    (GLB_opsum_ready    ),
         .GLB_data_out       (GLB_data_out       ),
         .op_get_done        (op_get_done        ),
         .op_pass_done       (op_pass_done       ),

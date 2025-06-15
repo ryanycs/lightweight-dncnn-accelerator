@@ -3,7 +3,7 @@
 
 `define CYCLE           20.0
 // `define END_CYCLE       ((3*500+20)*(10**6))    // L0 + L1 *3 + L4
-`define END_CYCLE       (2*(10**9)) 
+`define END_CYCLE       (2*(10**9))
 
 `define BRAM_SIZE       (2**17)
 `define IMAGE_SIZE      (256*256)
@@ -88,15 +88,15 @@ module testfixture;
     logic [31:0] IFMAP_DDR      [0 : `PAD_IMAGE_SIZE * (`SHAPE_C_MAX/4) - 1];
     logic [31:0] OFMAP_DDR      [0 : `PAD_IMAGE_SIZE * (`SHAPE_C_MAX/4) - 1];
 
-    logic [31:0] L0_WEIGHT_DDR   [0 : `L0_SHAPE_M  * ( `L0_SHAPE_C/ `L0_MAP_Q) * `KERNEL_SIZE - 1]; 
-    logic [31:0] L1_WEIGHT_DDR   [0 : `L13_SHAPE_M * (`L13_SHAPE_C/`L13_MAP_Q) * `KERNEL_SIZE - 1]; 
-    logic [31:0] L2_WEIGHT_DDR   [0 : `L13_SHAPE_M * (`L13_SHAPE_C/`L13_MAP_Q) * `KERNEL_SIZE - 1]; 
-    logic [31:0] L3_WEIGHT_DDR   [0 : `L13_SHAPE_M * (`L13_SHAPE_C/`L13_MAP_Q) * `KERNEL_SIZE - 1]; 
-    logic [31:0] L4_WEIGHT_DDR   [0 : `L4_SHAPE_M  * ( `L4_SHAPE_C/ `L4_MAP_Q) * `KERNEL_SIZE - 1]; 
+    logic [31:0] L0_WEIGHT_DDR   [0 : `L0_SHAPE_M  * ( `L0_SHAPE_C/ `L0_MAP_Q) * `KERNEL_SIZE - 1];
+    logic [31:0] L1_WEIGHT_DDR   [0 : `L13_SHAPE_M * (`L13_SHAPE_C/`L13_MAP_Q) * `KERNEL_SIZE - 1];
+    logic [31:0] L2_WEIGHT_DDR   [0 : `L13_SHAPE_M * (`L13_SHAPE_C/`L13_MAP_Q) * `KERNEL_SIZE - 1];
+    logic [31:0] L3_WEIGHT_DDR   [0 : `L13_SHAPE_M * (`L13_SHAPE_C/`L13_MAP_Q) * `KERNEL_SIZE - 1];
+    logic [31:0] L4_WEIGHT_DDR   [0 : `L4_SHAPE_M  * ( `L4_SHAPE_C/ `L4_MAP_Q) * `KERNEL_SIZE - 1];
 
-    logic [31:0] L1_BIAS_DDR    [0 : `L13_SHAPE_M - 1]; 
-    logic [31:0] L2_BIAS_DDR    [0 : `L13_SHAPE_M - 1]; 
-    logic [31:0] L3_BIAS_DDR    [0 : `L13_SHAPE_M - 1]; 
+    logic [31:0] L1_BIAS_DDR    [0 : `L13_SHAPE_M - 1];
+    logic [31:0] L2_BIAS_DDR    [0 : `L13_SHAPE_M - 1];
+    logic [31:0] L3_BIAS_DDR    [0 : `L13_SHAPE_M - 1];
 
     logic [31:0] OFMAP_GOLDEN   [0 : `IMAGE_SIZE * (`SHAPE_M_MAX/4) - 1];
 
@@ -123,34 +123,34 @@ module testfixture;
     logic [31:0]    expect_data;
     logic [31:0]    real_data;
     logic [63:0]    cycle_count;
-    int             err, error_flag;         
+    int             err, error_flag;
 
     int             ifmap_ddr_addr;
-    int             weight_ddr_addr; 
-    int             bias_ddr_addr;  
+    int             weight_ddr_addr;
+    int             bias_ddr_addr;
 
     int             ifmap_bram_addr;
-    int             ofmap_bram_addr;     
-    int             weight_bram_addr; 
-    int             bias_bram_addr; 
-    
+    int             ofmap_bram_addr;
+    int             weight_bram_addr;
+    int             bias_bram_addr;
+
     int             OPSUM_ROW_THIS_PASS;
 
     int             fd;
 
     // Controller instance ==============================================================
     Controller u_Controller (
-        .clk(clk), 
+        .clk(clk),
         .rst(rst),
-        .layer_info(layer_info), 
+        .layer_info(layer_info),
         .layer_enable(layer_enable),
-        .pass_enable(pass_enable), 
-        .pass_ready(pass_ready), 
+        .pass_enable(pass_enable),
+        .pass_ready(pass_ready),
         .pass_done(pass_done),
-        .bram_b_addr(bram_b_addr), 
+        .bram_b_addr(bram_b_addr),
         .bram_b_din(bram_b_din),
-        .bram_b_dout(bram_b_dout), 
-        .bram_b_en(bram_b_en), 
+        .bram_b_dout(bram_b_dout),
+        .bram_b_en(bram_b_en),
         .bram_b_web(bram_b_web)
     );
     // Controller instance ==============================================================
@@ -160,15 +160,15 @@ module testfixture;
         if(rst)begin
             bram_a_dout <= 32'd0;
             bram_b_dout <= 32'd0;
-            // for(int i=0;i<`BRAM_SIZE;i++)   
+            // for(int i=0;i<`BRAM_SIZE;i++)
             //     BRAM_DATA[i] <= 32'd0;
         end begin
             // read a ===================================================================
-            if (~|bram_b_web) 
+            if (~|bram_b_web)
                 bram_b_dout <= BRAM_DATA[bram_b_addr>>2];
             // read a ===================================================================
             // read b ===================================================================
-            if (~|bram_a_web) 
+            if (~|bram_a_web)
                 bram_a_dout <= BRAM_DATA[bram_a_addr   ];
             // read b ===================================================================
             // write ====================================================================
@@ -309,7 +309,7 @@ module testfixture;
             for(int hh = 0; hh < (OPSUM_ROW+2); hh++) begin
                 for(int ww = 0; ww < 256; ww++) begin
                     ifmap_ddr_addr  =                          (((C_IDX * MAP_R + rr) * 258           * 256 ) + (((E_IDX * MAP_E) + hh) * 256) + ww);
-                    ifmap_bram_addr = (`GLB_IFADDR_OFFSET/4) + ((                 rr  * (OPSUM_ROW+2) * 256 ) + (                   hh  * 256) + ww); 
+                    ifmap_bram_addr = (`GLB_IFADDR_OFFSET/4) + ((                 rr  * (OPSUM_ROW+2) * 256 ) + (                   hh  * 256) + ww);
                     bram_a_din      = IFMAP_DDR[ifmap_ddr_addr];
                     bram_a_addr     = ifmap_bram_addr;
                     @(negedge clk);
@@ -365,8 +365,8 @@ module testfixture;
         $display(" ================================================================================");
         layer_info      = 3'd0;
         layer_enable    = 1'b1;
-        #(`CYCLE*1);    #1; 
-        layer_enable    = 1'b0; 
+        #(`CYCLE*1);    #1;
+        layer_enable    = 1'b0;
         // initial L0 IFMAP WEIGHT DDR DATA
         $display(" ================================================================================");
         $display(" [ INFO] READ %s INTO DDR", `L0_IFMAP_DAT);
@@ -413,8 +413,8 @@ module testfixture;
         $display(" ================================================================================");
         layer_info      = 3'd1;
         layer_enable    = 1'b1;
-        #(`CYCLE*1);    #1; 
-        layer_enable    = 1'b0; 
+        #(`CYCLE*1);    #1;
+        layer_enable    = 1'b0;
         // initial L1 DDR DATA
         $display(" ================================================================================");
         $display(" [ INFO] READ %s INTO DDR", `L1_IFMAP_DAT);
@@ -466,8 +466,8 @@ module testfixture;
         $display(" ================================================================================");
         layer_info      = 3'd2;
         layer_enable    = 1'b1;
-        #(`CYCLE*1);    #1; 
-        layer_enable    = 1'b0; 
+        #(`CYCLE*1);    #1;
+        layer_enable    = 1'b0;
         // initial L2 DDR DATA
         $display(" ================================================================================");
         $display(" [ INFO] READ %s INTO DDR", `L2_IFMAP_DAT);
@@ -519,8 +519,8 @@ module testfixture;
         $display(" ================================================================================");
         layer_info      = 3'd3;
         layer_enable    = 1'b1;
-        #(`CYCLE*1);    #1; 
-        layer_enable    = 1'b0; 
+        #(`CYCLE*1);    #1;
+        layer_enable    = 1'b0;
         // initial L3 DDR DATA
         $display(" ================================================================================");
         $display(" [ INFO] READ %s INTO DDR", `L3_IFMAP_DAT);
@@ -572,8 +572,8 @@ module testfixture;
         $display(" ================================================================================");
         layer_info      = 3'd4;
         layer_enable    = 1'b1;
-        #(`CYCLE*1);    #1; 
-        layer_enable    = 1'b0; 
+        #(`CYCLE*1);    #1;
+        layer_enable    = 1'b0;
         // initial L4 DDR DATA
         $display(" ================================================================================");
         $display(" [ INFO] READ %s INTO DDR", `L4_IFMAP_DAT);
@@ -612,7 +612,7 @@ module testfixture;
         end
 
         write_ddr_ofmap_to_file(layer_info);
-        
+
         $display(" ================================================================================");
         $display(" [ INFO] L4 Simulation DONE !!!");
         $display(" ================================================================================");
@@ -633,8 +633,8 @@ module testfixture;
         $display(" ================================================================================");
         layer_info      = 3'd0;
         layer_enable    = 1'b1;
-        #(`CYCLE*1);    #1; 
-        layer_enable    = 1'b0; 
+        #(`CYCLE*1);    #1;
+        layer_enable    = 1'b0;
         // initial L0 IFMAP WEIGHT DDR DATA
         $display(" ================================================================================");
         $display(" [ INFO] READ %s INTO DDR", `L0_IFMAP_DAT);
@@ -678,8 +678,8 @@ module testfixture;
         $display(" ================================================================================");
         layer_info      = 3'd1;
         layer_enable    = 1'b1;
-        #(`CYCLE*1);    #1; 
-        layer_enable    = 1'b0; 
+        #(`CYCLE*1);    #1;
+        layer_enable    = 1'b0;
         // initial L1 DDR DATA
         $display(" ================================================================================");
         // $display(" [ INFO] READ %s INTO DDR", `L1_IFMAP_DAT);
@@ -728,14 +728,14 @@ module testfixture;
         $display(" [ INFO] COPY L1 OFMAP RESULT FROM OFMAP DDR TO IFMAP DDR");
         copy_ofmap_ddr_to_ifmap_ddr();
         $display(" ================================================================================");
-        
+
         $display(" ================================================================================");
         $display(" [ INFO] L2 Simulation Start !!! ");
         $display(" ================================================================================");
         layer_info      = 3'd2;
         layer_enable    = 1'b1;
-        #(`CYCLE*1);    #1; 
-        layer_enable    = 1'b0; 
+        #(`CYCLE*1);    #1;
+        layer_enable    = 1'b0;
         // initial L2 DDR DATA
         $display(" ================================================================================");
         $display(" [ INFO] READ %s INTO DDR", `L2_WEIGHT_DAT);
@@ -788,8 +788,8 @@ module testfixture;
         $display(" ================================================================================");
         layer_info      = 3'd3;
         layer_enable    = 1'b1;
-        #(`CYCLE*1);    #1; 
-        layer_enable    = 1'b0; 
+        #(`CYCLE*1);    #1;
+        layer_enable    = 1'b0;
         // initial L3 DDR DATA
         $display(" ================================================================================");
         // $display(" [ INFO] READ %s INTO DDR", `L3_IFMAP_DAT);
@@ -844,8 +844,8 @@ module testfixture;
         $display(" ================================================================================");
         layer_info      = 3'd4;
         layer_enable    = 1'b1;
-        #(`CYCLE*1);    #1; 
-        layer_enable    = 1'b0; 
+        #(`CYCLE*1);    #1;
+        layer_enable    = 1'b0;
         // initial L4 DDR DATA
         $display(" ================================================================================");
         // $display(" [ INFO] READ %s INTO DDR", `L4_IFMAP_DAT);
@@ -885,12 +885,12 @@ module testfixture;
         $display(" [ INFO] L4 Simulation DONE !!!");
         $display(" ================================================================================");
     endtask
-    
-    // main 
+
+    // main
     initial begin
-        @(negedge clk);  
-        #(`CYCLE*1);    #1; 
-        rst             = 1'b0; 
+        @(negedge clk);
+        #(`CYCLE*1);    #1;
+        rst             = 1'b0;
 
         for(int i=0;i<`PAD_IMAGE_SIZE*(`SHAPE_C_MAX/4);i++)begin
             OFMAP_DDR[i] <= 32'h80_80_80_80;
@@ -898,7 +898,7 @@ module testfixture;
 
         `ifdef TEST_L0
             test_L0();
-        `endif 
+        `endif
         `ifdef TEST_L1
             test_L1();
         `endif
@@ -921,7 +921,7 @@ module testfixture;
         #(`CYCLE*4); $finish;
     end
 
-    // max cycle 
+    // max cycle
     initial begin
         #(`CYCLE*`END_CYCLE);
         $display(" ================================================================================");
