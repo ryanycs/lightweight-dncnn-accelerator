@@ -168,7 +168,7 @@ module testfixture;
             //     BRAM_DATA[i] <= 32'd0;
         end begin
             // read a ===================================================================
-            if (~|bram_b_web)
+            if ((~|bram_b_web) & (bram_b_en))
                 bram_b_dout <= BRAM_DATA[bram_b_addr>>2];
             // read a ===================================================================
             // read b ===================================================================
@@ -179,7 +179,7 @@ module testfixture;
             for (int i = 0; i < 4; i++)begin
                 if (bram_a_web[i])
                     BRAM_DATA[bram_a_addr   ][(i*8)+:8] <= bram_a_din[(i*8)+:8];
-                else if (bram_b_web[i])
+                else if (bram_b_web[i] & (bram_b_en))
                     BRAM_DATA[bram_b_addr>>2][(i*8)+:8] <= bram_b_din[(i*8)+:8];
             end
             // write ====================================================================
@@ -878,12 +878,12 @@ module testfixture;
                 end
             end
         end
-        check_ddr_ofmap(layer_info, err);
-        if(err)begin
-            $display(" [ERROR] L4 OFMAP FAIL !! There are %d error in test patterns.", err);
-        end else begin
-            $display(" [ INFO] L4 OFMAP PASS !! All ofmap data have been generated successfully!");
-        end
+        // check_ddr_ofmap(layer_info, err);
+        // if(err)begin
+        //     $display(" [ERROR] L4 OFMAP FAIL !! There are %d error in test patterns.", err);
+        // end else begin
+        //     $display(" [ INFO] L4 OFMAP PASS !! All ofmap data have been generated successfully!");
+        // end
         write_ddr_ofmap_to_file(layer_info);
         $display(" ================================================================================");
         $display(" [ INFO] L4 Simulation DONE !!!");

@@ -739,7 +739,10 @@ module  Controller(
     // PE ARRAY signals ======================================================================================================
 
     // BRAM ==================================================================================================================
-    assign bram_b_en            = 1'b1;
+
+    // assign bram_b_en            = 1'b1;
+    assign bram_b_en            = ((CS==GETOPSUM)&&(~GLB_opsum_valid)) ?  1'b0 : 1'b1;
+
     always @(*) begin
         if(CS==GETOPSUM && GLB_opsum_valid)begin
             if(tile_C_done)begin
