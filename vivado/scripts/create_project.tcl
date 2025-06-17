@@ -177,7 +177,7 @@ set files [list \
 ]
 set imported_files [import_files -fileset sources_1 $files]
 
-source design_1.tcl
+source ./scripts/design_1.tcl
 
 #call make_wrapper to create wrapper files
 if { [get_property IS_LOCKED [ get_files -norecurse design_1.bd] ] == 1  } {
