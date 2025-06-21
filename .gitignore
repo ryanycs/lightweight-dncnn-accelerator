@@ -8,3 +8,18 @@ simv
 csrc/
 simv.daidir/
 out_dat/
+
+# Vivado project
+.Xil/
+.Xiltemp/
+NA/
+*.srcs/
+*.cache/
+*.hw/
+*.sim/
+*.runs/
+*.ip_user_files/
+*.gen/
+*.jou
+*.xpr
+output/
