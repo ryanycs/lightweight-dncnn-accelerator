@@ -1,9 +1,79 @@
+import argparse
 import math
+import os
 
 import numpy as np
+import torch
 import torch.nn as nn
+from config import Config
 from skimage.metrics import peak_signal_noise_ratio as psnr
 
+
+def get_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="DnCNN")
+    parser.add_argument(
+        "--preprocess",
+        type=bool,
+        default=False,
+        help="run prepare_data or not",
+    )
+    parser.add_argument(
+        "--batchSize",
+        type=int,
+        default=128,
+        help="Training batch size",
+    )
+    parser.add_argument(
+        "--num_of_layers",
+        type=int,
+        default=Config.num_of_layers,
+        help="Number of total layers",
+    )
+    parser.add_argument(
+        "--epochs",
+        type=int,
+        default=50,
+        help="Number of training epochs",
+    )
+    parser.add_argument(
+        "--milestone",
+        type=int,
+        default=30,
+        help="When to decay learning rate; should be less than epochs",
+    )
+    parser.add_argument(
+        "--lr",
+        type=float,
+        default=1e-3,
+        help="Initial learning rate",
+    )
+    parser.add_argument(
+        "--outf",
+        type=str,
+        default="logs",
+        help="path of log files",
+    )
+    parser.add_argument(
+        "--mode",
+        type=str,
+        default="S",
+        help="with known noise level (S) or blind training (B)",
+    )
+    parser.add_argument(
+        "--noiseL",
+        type=float,
+        default=25,
+        help="noise level; ignored when mode=B",
+    )
+    parser.add_argument(
+        "--val_noiseL",
+        type=float,
+        default=25,
+        help="noise level used on validation set",
+    )
+    args = parser.parse_args()
+
+    return args
 
 def weights_init_kaiming(m):
     classname = m.__class__.__name__
@@ -58,3 +128,32 @@ def data_augmentation(image, mode):
         out = np.rot90(out, k=3)
         out = np.flipud(out)
     return np.transpose(out, (2, 0, 1))
+
+
+def preprocess_filename(filename: str, existed: str = "keep_both") -> str:
+    if existed == "overwrite":
+        pass
+    elif existed == "keep_both":
+        base, ext = os.path.splitext(filename)
+        cnt = 1
+        while os.path.exists(filename):
+            filename = f"{base}-{cnt}{ext}"
+            cnt += 1
+    elif existed == "raise" and os.path.exists(filename):
+        raise FileExistsError(f"{filename} already exists.")
+    else:
+        raise ValueError(f"Unknown value for 'existed': {existed}")
+    return filename
+
+
+def save_model(
+    model, filename: str, verbose: bool = True, existed: str = "keep_both"
+) -> None:
+    filename = preprocess_filename(filename, existed)
+
+    os.makedirs(os.path.dirname(filename), exist_ok=True)
+    torch.save(model.state_dict(), filename)
+    if verbose:
+        print(f"Model saved at {filename} ({os.path.getsize(filename) / 1e6} MB)")
+    else:
+        print(f"Model saved at {filename}")
