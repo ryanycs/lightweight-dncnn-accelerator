@@ -5,3 +5,4 @@ opencv-python
 scikit-image
 ipykernel
 tensorboardX
+h5py

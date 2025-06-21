@@ -1,5 +1,7 @@
 .venv/
 __pycache__/
+logs/
+*.h5
 
 *.fsdb
 *.log
