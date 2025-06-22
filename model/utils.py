@@ -4,6 +4,7 @@ import os
 
 import numpy as np
 import torch
+import torch.ao.quantization as tq
 import torch.nn as nn
 from config import Config
 from skimage.metrics import peak_signal_noise_ratio as psnr
@@ -74,6 +75,7 @@ def get_args() -> argparse.Namespace:
     args = parser.parse_args()
 
     return args
+
 
 def weights_init_kaiming(m):
     classname = m.__class__.__name__
@@ -157,3 +159,23 @@ def save_model(
         print(f"Model saved at {filename} ({os.path.getsize(filename) / 1e6} MB)")
     else:
         print(f"Model saved at {filename}")
+
+
+def load_model(
+    model, filename: str, qconfig=None, fuse_modules: bool = False, verbose: bool = True
+) -> torch.nn.Module:
+    if fuse_modules and hasattr(model, "fuse_layers"):
+        model.eval()
+        model.fuse_layers()
+
+    if qconfig is not None:
+        model = tq.QuantWrapper(model)
+        model.qconfig = qconfig
+        tq.prepare(model, inplace=True)
+        tq.convert(model, inplace=True)
+
+    model.load_state_dict(torch.load(filename, map_location="cpu"))
+
+    if verbose:
+        print(f"Model loaded from {filename} ({os.path.getsize(filename) / 1e6} MB)")
+    return model
