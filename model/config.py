@@ -17,3 +17,5 @@ class Config:
     quantized_model_path: str = os.path.join(base_dir, model_dir, quantized_model_name)
 
     train_data_path: str = os.path.join(base_dir, "data", "train")
+
+    hex_weights_dir: str = os.path.join(base_dir, model_dir, "hex_weights")
