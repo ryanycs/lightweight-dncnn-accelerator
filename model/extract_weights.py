@@ -87,6 +87,18 @@ def extract_bias(model: torch.nn.Module, scale_a, scale_w):
             # Store bias in a DataFrame
             df[f"layer{layer}"] = bias
 
+            # Save bias to a hex file
+            with open(
+                os.path.join(Config.extracted_weights_dir, f"layer{layer}_bias.hex"),
+                "w",
+            ) as f:
+                for b in bias:
+                    b_hex = b.tobytes().hex().upper()
+
+                    # To big-endian
+                    b_hex = b_hex[6:8] + b_hex[4:6] + b_hex[2:4] + b_hex[0:2]
+                    f.write(f"{b_hex}\n")
+
         layer += 1
 
     df.to_csv(os.path.join(Config.extracted_weights_dir, "bias_int32.csv"), index=False)
