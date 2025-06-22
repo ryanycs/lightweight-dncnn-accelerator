@@ -1,6 +1,7 @@
 import os
 
 import numpy as np
+import pandas as pd
 import torch
 from config import Config
 from quantize import CustomQConfig
@@ -10,18 +11,26 @@ from model import DnCNN
 
 
 def extract_weights(model: torch.nn.Module):
-    os.makedirs(Config.hex_weights_dir, exist_ok=True)
+    scale_a = {}  # activation scale
+    scale_w = {}  # weight scale
+
+    os.makedirs(Config.extracted_weights_dir, exist_ok=True)
 
     layer = 0
     for name, modules in model.named_modules():
+        if hasattr(modules, "scale"):
+            scale_a[layer] = modules.scale
+
         if not hasattr(modules, "weight"):
             continue
 
         weight: torch.Tensor = modules.weight()
 
+        # Store scale and zero point
+        scale_w[layer] = weight.q_scale()
+
         # Convert weight to int
         weight = weight.int_repr().numpy()
-        print(f"Module: {name}, weight shape: {weight.shape}")
 
         in_channels, out_channels, h, w = weight.shape
 
@@ -31,7 +40,8 @@ def extract_weights(model: torch.nn.Module):
             weight = np.hsplit(weight, in_channels * out_channels // 4)
 
             with open(
-                os.path.join(Config.hex_weights_dir, f"layer{layer}_weight.hex"), "w"
+                os.path.join(Config.extracted_weights_dir, f"layer{layer}_weight.hex"),
+                "w",
             ) as f:
                 for i in range(len(weight)):
                     for j in range(9):
@@ -46,7 +56,8 @@ def extract_weights(model: torch.nn.Module):
             out_channels, kernel_size = weight.shape
 
             with open(
-                os.path.join(Config.hex_weights_dir, f"layer{layer}_weight.hex"), "w"
+                os.path.join(Config.extracted_weights_dir, f"layer{layer}_weight.hex"),
+                "w",
             ) as f:
                 for i in range(out_channels):
                     for j in range(kernel_size):
@@ -57,10 +68,28 @@ def extract_weights(model: torch.nn.Module):
 
         layer += 1
 
+    return scale_a, scale_w
 
-def extract_bias(model: torch.nn.Module):
-    # TODO: Implement bias extraction
-    pass
+
+def extract_bias(model: torch.nn.Module, scale_a, scale_w):
+    df = pd.DataFrame()
+
+    layer = 0
+    for name, param in model.state_dict().items():
+        if "bias" not in name:
+            continue
+
+        if param is not None:
+            bias = param.numpy()
+            bias = np.round(bias / (scale_a[layer - 1] * scale_w[layer]))
+            bias = bias.astype(np.int32)
+
+            # Store bias in a DataFrame
+            df[f"layer{layer}"] = bias
+
+        layer += 1
+
+    df.to_csv(os.path.join(Config.extracted_weights_dir, "bias_int32.csv"), index=False)
 
 
 def main():
@@ -74,7 +103,10 @@ def main():
         fuse_modules=True,
     )
 
-    extract_weights(model)
+    scale_a, scale_w = extract_weights(model)
+    extract_bias(model, scale_a, scale_w)
+
+    print("Weights and biases extracted successfully.")
 
 
 if __name__ == "__main__":
