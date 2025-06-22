@@ -1,3 +1,4 @@
+import argparse
 import os
 
 import numpy as np
@@ -10,7 +11,7 @@ from utils import load_model
 from model import DnCNN
 
 
-def extract_weights(model: torch.nn.Module):
+def extract_weights(model: torch.nn.Module, debug: bool = False):
     scale_a = {}  # activation scale
     scale_w = {}  # weight scale
 
@@ -24,36 +25,42 @@ def extract_weights(model: torch.nn.Module):
         if not hasattr(modules, "weight"):
             continue
 
-        weight: torch.Tensor = modules.weight()
+        weights: torch.Tensor = modules.weight()
 
         # Store scale and zero point
-        scale_w[layer] = weight.q_scale()
+        scale_w[layer] = weights.q_scale()
 
         # Convert weight to int
-        weight = weight.int_repr().numpy()
+        weights = weights.int_repr().numpy()
 
-        in_channels, out_channels, h, w = weight.shape
+        in_channels, out_channels, h, w = weights.shape
 
         if layer != 0:
-            # Reshape to (9, in_channels*out_channels)
-            weight = weight.reshape(in_channels * out_channels, h * w).T
-            weight = np.hsplit(weight, in_channels * out_channels // 4)
+            # Reshape to (9, in_channels * out_channels)
+            weights = weights.reshape(in_channels * out_channels, h * w).T
+            weights = np.hsplit(weights, in_channels * out_channels // 4)
 
             with open(
                 os.path.join(Config.extracted_weights_dir, f"layer{layer}_weight.hex"),
                 "w",
             ) as f:
-                for i in range(len(weight)):
-                    for j in range(9):
-                        w = weight[i][j]
-                        w = np.flip(w, axis=0)
-                        w_hex = w.tobytes().hex().upper()
+                for i in range(len(weights)):
+                    for j in range(h * w):
+                        weight = weights[i][j]
+                        weight = np.flip(weight, axis=0)
+                        weight_hex = weight.tobytes().hex().upper()
 
-                        f.write(f"{w_hex}\n")
+                        if debug:
+                            # Example: FD04F8FF // (  -3,   4,  -8,  -1)
+                            f.write(
+                                f"{weight_hex} // ({','.join('{:>4}'.format(str(w)) for w in weight)})\n"
+                            )
+                        else:
+                            f.write(f"{weight_hex}\n")
         else:
             # For the first layer, we need to handle the weight differently
-            weight = weight.reshape(in_channels * out_channels, h * w)
-            out_channels, kernel_size = weight.shape
+            weights = weights.reshape(in_channels * out_channels, h * w)
+            out_channels, kernel_size = weights.shape
 
             with open(
                 os.path.join(Config.extracted_weights_dir, f"layer{layer}_weight.hex"),
@@ -61,17 +68,22 @@ def extract_weights(model: torch.nn.Module):
             ) as f:
                 for i in range(out_channels):
                     for j in range(kernel_size):
-                        w = weight[i][j]
-                        w_hex = w.tobytes().hex().upper()
+                        weight = weights[i][j]
+                        weight_hex = weight.tobytes().hex().upper()
 
-                        f.write(f"{w_hex}\n")
+                        if debug:
+                            f.write(f"{weight_hex} // ({weight})\n")
+                        else:
+                            f.write(f"{weight_hex}\n")
 
         layer += 1
 
     return scale_a, scale_w
 
 
-def extract_bias(model: torch.nn.Module, scale_a, scale_w):
+def extract_bias(
+    model: torch.nn.Module, scale_a: list, scale_w: list, debug: bool = False
+):
     df = pd.DataFrame()
 
     layer = 0
@@ -80,24 +92,30 @@ def extract_bias(model: torch.nn.Module, scale_a, scale_w):
             continue
 
         if param is not None:
-            bias = param.numpy()
-            bias = np.round(bias / (scale_a[layer - 1] * scale_w[layer]))
-            bias = bias.astype(np.int32)
+            biases = param.numpy()
+            biases = np.round(biases / (scale_a[layer - 1] * scale_w[layer]))
+            biases = biases.astype(np.int32)
 
             # Store bias in a DataFrame
-            df[f"layer{layer}"] = bias
+            df[f"layer{layer}"] = biases
 
             # Save bias to a hex file
             with open(
                 os.path.join(Config.extracted_weights_dir, f"layer{layer}_bias.hex"),
                 "w",
             ) as f:
-                for b in bias:
-                    b_hex = b.tobytes().hex().upper()
+                for bias in biases:
+                    bias_hex = bias.tobytes().hex().upper()
 
                     # To big-endian
-                    b_hex = b_hex[6:8] + b_hex[4:6] + b_hex[2:4] + b_hex[0:2]
-                    f.write(f"{b_hex}\n")
+                    bias_hex = (
+                        bias_hex[6:8] + bias_hex[4:6] + bias_hex[2:4] + bias_hex[0:2]
+                    )
+
+                    if debug:
+                        f.write(f"{bias_hex} // ({'+' if bias > 0 else ''}{bias})\n")
+                    else:
+                        f.write(f"{bias_hex}\n")
 
         layer += 1
 
@@ -105,18 +123,25 @@ def extract_bias(model: torch.nn.Module, scale_a, scale_w):
 
 
 def main():
-    channels = 1
-    num_of_layers = 5
+    parser = argparse.ArgumentParser(
+        description="Extract weights and biases from DnCNN model."
+    )
+    parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="Enable debug mode for detailed output.",
+    )
+    args = parser.parse_args()
 
     model = load_model(
-        model=DnCNN(channels=channels, num_of_layers=num_of_layers),
+        model=DnCNN(channels=1, num_of_layers=Config.num_of_layers),
         filename=Config.quantized_model_path,
         qconfig=CustomQConfig.POWER2.value,
         fuse_modules=True,
     )
 
-    scale_a, scale_w = extract_weights(model)
-    extract_bias(model, scale_a, scale_w)
+    scale_a, scale_w = extract_weights(model, debug=args.debug)
+    extract_bias(model, scale_a, scale_w, debug=args.debug)
 
     print("Weights and biases extracted successfully.")
 
