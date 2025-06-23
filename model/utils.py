@@ -50,7 +50,7 @@ def get_args() -> argparse.Namespace:
     parser.add_argument(
         "--outf",
         type=str,
-        default="logs",
+        default=Config.log_dir,
         help="path of log files",
     )
     parser.add_argument(

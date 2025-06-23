@@ -20,3 +20,5 @@ class Config:
     train_data_path: str = os.path.join(data_dir, "train")
 
     extracted_weights_dir: str = os.path.join(base_dir, "output")
+
+    log_dir: str = os.path.join(base_dir, "logs")
