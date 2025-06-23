@@ -142,7 +142,11 @@ if __name__ == "__main__":
     opt = get_args()
     if opt.preprocess:
         if opt.mode == "S":
-            prepare_data(data_path="data", patch_size=40, stride=10, aug_times=1)
+            prepare_data(
+                data_path=Config.data_dir, patch_size=40, stride=10, aug_times=1
+            )
         if opt.mode == "B":
-            prepare_data(data_path="data", patch_size=50, stride=10, aug_times=2)
+            prepare_data(
+                data_path=Config.data_dir, patch_size=50, stride=10, aug_times=2
+            )
     main(opt)

@@ -16,6 +16,7 @@ class Config:
     quantized_model_name: str = "DnCNN_5_layers_int8.pt"
     quantized_model_path: str = os.path.join(base_dir, model_dir, quantized_model_name)
 
-    train_data_path: str = os.path.join(base_dir, "data", "train")
+    data_dir: str = os.path.join(base_dir, "data")
+    train_data_path: str = os.path.join(data_dir, "train")
 
     extracted_weights_dir: str = os.path.join(base_dir, "output")

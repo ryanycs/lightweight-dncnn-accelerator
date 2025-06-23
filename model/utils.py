@@ -14,8 +14,7 @@ def get_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="DnCNN")
     parser.add_argument(
         "--preprocess",
-        type=bool,
-        default=False,
+        action="store_true",
         help="run prepare_data or not",
     )
     parser.add_argument(

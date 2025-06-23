@@ -8,6 +8,7 @@ import h5py
 import numpy as np
 import torch
 import torch.utils.data as udata
+from config import Config
 from utils import data_augmentation
 
 
@@ -34,12 +35,17 @@ def Im2Patch(img, win, stride=1):
 
 
 def prepare_data(data_path, patch_size, stride, aug_times=1):
+    # Check if .h5 files already exist
+    if len(glob.glob(os.path.join(Config.data_dir, "*.h5"))) > 0:
+        print("Data files already exist. Skipping data preparation.")
+        return
+
     # train
     print("process training data")
     scales = [1, 0.9, 0.8, 0.7]
     files = glob.glob(os.path.join(data_path, "train", "*.png"))
     files.sort()
-    h5f = h5py.File("train.h5", "w")
+    h5f = h5py.File(os.path.join(Config.data_dir, "train.h5"), "w")
     train_num = 0
     for i in range(len(files)):
         img = cv2.imread(files[i])
@@ -73,7 +79,7 @@ def prepare_data(data_path, patch_size, stride, aug_times=1):
     files.clear()
     files = glob.glob(os.path.join(data_path, "Set12", "*.png"))
     files.sort()
-    h5f = h5py.File("val.h5", "w")
+    h5f = h5py.File(os.path.join(Config.data_dir, "val.h5"), "w")
     val_num = 0
     for i in range(len(files)):
         print("file: %s" % files[i])
@@ -92,9 +98,9 @@ class Dataset(udata.Dataset):
         super(Dataset, self).__init__()
         self.train = train
         if self.train:
-            h5f = h5py.File("train.h5", "r")
+            h5f = h5py.File(os.path.join(Config.data_dir, "train.h5"), "r")
         else:
-            h5f = h5py.File("val.h5", "r")
+            h5f = h5py.File(os.path.join(Config.data_dir, "val.h5"), "r")
         self.keys = list(h5f.keys())
         random.shuffle(self.keys)
         h5f.close()
@@ -104,9 +110,9 @@ class Dataset(udata.Dataset):
 
     def __getitem__(self, index):
         if self.train:
-            h5f = h5py.File("train.h5", "r")
+            h5f = h5py.File(os.path.join(Config.data_dir, "train.h5"), "r")
         else:
-            h5f = h5py.File("val.h5", "r")
+            h5f = h5py.File(os.path.join(Config.data_dir, "val.h5"), "r")
         key = self.keys[index]
         data = np.array(h5f[key])
         h5f.close()
