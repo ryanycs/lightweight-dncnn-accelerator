@@ -1,0 +1,124 @@
+# Lightweight DnCNN Accelerator
+
+## Introduction
+
+This project is a lightweight DnCNN (Denoising Convolutional Neural Network) accelerator designed for image denoising.
+
+## Requirements
+
+### Software
+
+- GNU Make
+- Python 3.x
+- Synopsys VCS (for RTL simulation)
+- Xilinx Vivado 2022.1 (for synthesis)
+
+### Hardware
+
+- Xilinx Pynq Z2 board
+
+## Build
+
+### Clone the repository
+
+```shell
+git clone https://github.com/ryanycs/NCKU-AoC-final-project.git
+cd NCKU-AoC-final-project
+```
+
+You can run the following command to check the available make targets:
+
+```shell
+make help
+```
+
+### Install dependencies
+
+```shell
+pip install -r requirements.txt
+```
+
+### Train the DnCNN Model
+
+```shell
+make train
+```
+
+For more training options, you can run `python model/train.py --help`, and specify the options you want by manually running the script.
+
+There is a **pre-trained** model available in the `model/weights` directory. You can use it directly without training.
+
+### Quantization
+
+```shell
+make quantize
+```
+
+This will convert the floating-point weights to fixed-point representation suitable for hardware implementation, and extract the model weights into `.hex/.csv` files for simulation and deployment.
+
+There is also a **pre-quantized** model available in the `model/weights` directory. You can use it directly without quantization.
+
+If you are using the pre-quantized model, you still need to extract the weights:
+
+```shell
+python model/extract_weights.py [--debug]
+```
+
+### Synthesis
+
+Use Vivado to synthesize and generate the .bit and .hwh files:
+
+```shell
+make synth
+```
+
+> :warning: Make sure you have **Vivado 2022.1** installed and have set the vivado executable path in your environment variables. The synthesis process may take a long time.
+
+The `.bit` and `.hwh` files will be generated in the `vivado/output` directory.
+
+We also provide a **pre-synthesized** bitstream file. You can use it directly without synthesis.
+
+### Build the Project
+
+After completing the above steps, you can build the project using the following command:
+
+```shell
+make build
+```
+
+This command will package the following files into `build` directory for deployment on the Pynq Z2 board:
+
+- Bitstream file (`.bit`)
+- Hardware description file (`.hwh`)
+- Python scripts for running the DnCNN accelerator
+- Model weights and input data in `.hex` or `.csv` format
+
+## Usage
+
+### Run RTL Simulation
+
+```shell
+cd tests
+make
+```
+
+### Run on Pynq Z2 board
+
+1. Copy the `build` directory to the Pynq Z2 board.
+2. Open the Pynq Jupyter interface.
+3. Execute `build/DnCNN_pynq_run.ipynb` to run the accelerator.
+
+## Contributors
+
+- `M16134088`
+- `P76134820`
+- `M56134010`
+- `P76144320`
+- `NN6131045`
+- `P76134244`
+
+## References
+
+- [Eyeriss: An Energy-Efficient Reconfigurable Accelerator for Deep Convolutional Neural Networks](https://ieeexplore.ieee.org/document/7738524)
+- [Beyond a Gaussian Denoiser: Residual Learning of Deep CNN for Image Denoising](https://arxiv.org/abs/1608.03981)
+- [DnCNN-PyTorch](https://github.com/SaoYan/DnCNN-PyTorch)
