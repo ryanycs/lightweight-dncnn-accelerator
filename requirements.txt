@@ -1,7 +1,9 @@
 numpy
+pandas
 torch
 torchvision
 opencv-python
 scikit-image
 ipykernel
 tensorboardX
+h5py

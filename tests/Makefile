@@ -5,6 +5,7 @@ rtlsim:
 	-sverilog testfixture.sv  \
 	-debug_access+all +notimingcheck \
 	+define+TEST_ALL
+	python visualize_output.py
 
 clean:
 	@rm -f *.fsdb

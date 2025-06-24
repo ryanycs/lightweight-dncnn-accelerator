@@ -1,6 +1,10 @@
+# Python
 .venv/
 __pycache__/
+logs/
+*.h5
 
+# Simulation files
 *.fsdb
 *.log
 ucli.key
@@ -23,3 +27,6 @@ NA/
 *.jou
 *.xpr
 output/
+
+# PYNQ
+build/

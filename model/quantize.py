@@ -5,10 +5,13 @@ from enum import Enum
 
 import torch
 import torch.ao.quantization as tq
-from DnCNN_PyTorch.models import DnCNN
+from config import Config
 from PIL import Image
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
+from utils import save_model
+
+from model import DnCNN
 
 
 class PowerOfTwoObserver(tq.MinMaxObserver):
@@ -94,35 +97,6 @@ def get_calibration_loader(
     return DataLoader(dataset, batch_size=batch_size, shuffle=False)
 
 
-def preprocess_filename(filename: str, existed: str = "keep_both") -> str:
-    if existed == "overwrite":
-        pass
-    elif existed == "keep_both":
-        base, ext = os.path.splitext(filename)
-        cnt = 1
-        while os.path.exists(filename):
-            filename = f"{base}-{cnt}{ext}"
-            cnt += 1
-    elif existed == "raise" and os.path.exists(filename):
-        raise FileExistsError(f"{filename} already exists.")
-    else:
-        raise ValueError(f"Unknown value for 'existed': {existed}")
-    return filename
-
-
-def save_model(
-    model, filename: str, verbose: bool = True, existed: str = "keep_both"
-) -> None:
-    filename = preprocess_filename(filename, existed)
-
-    os.makedirs(os.path.dirname(filename), exist_ok=True)
-    torch.save(model.state_dict(), filename)
-    if verbose:
-        print(f"Model saved at {filename} ({os.path.getsize(filename) / 1e6} MB)")
-    else:
-        print(f"Model saved at {filename}")
-
-
 def calibrate(model, loader, device="cpu"):
     """Calibrate Method"""
     model.eval().to(device)
@@ -133,8 +107,6 @@ def calibrate(model, loader, device="cpu"):
 
 def main():
     # Load Pretrained Model
-    # TODO: Change fix path to config
-    model_path = "./model/DnCNN_5_layers.pt"
     channels = 1
     num_of_layers = 5
 
@@ -142,7 +114,7 @@ def main():
     Pretrained_model.eval()
     Pretrained_model.cpu()
 
-    state_dict = torch.load(model_path, map_location="cpu")
+    state_dict = torch.load(Config.model_path, map_location="cpu")
 
     new_state_dict = OrderedDict()
     for k, v in state_dict.items():
@@ -161,19 +133,14 @@ def main():
     # Apply Quantization Preparation
     tq.prepare(fused_model, inplace=True)
 
-    # TODO: Change fix path to config
     # Calibration
-    calibrate(
-        fused_model, get_calibration_loader(image_dir="./DnCNN_PyTorch/data/train")
-    )
+    calibrate(fused_model, get_calibration_loader(image_dir=Config.train_data_path))
 
     # Convert Model to Quantized Version
     tq.convert(fused_model.cpu(), inplace=True)
 
     # Save Quantized Model
-    # TODO: Change fix path to config & modify this path
-    quantized_model_path = "./DnCNN_5_layers_int8.pt"
-    save_model(fused_model, quantized_model_path, existed="overwrite")
+    save_model(fused_model, Config.quantized_model_path, existed="overwrite")
 
 
 if __name__ == "__main__":
