@@ -12,8 +12,8 @@ OUTPUT_ZERO_POINT = 128
 NOISE_HEX_IMAGE_PATH = os.path.join("dat", "layer0_dat", "layer0_input_image_pad.hex")
 RESIDUAL_PATH = os.path.join("out_dat", "layer4_ofmap_out.hex")
 
-NOISE_IMAGE_PATH = os.path.join("out_dat", "noise_image.png")
-OUTPUT_IMAGE_PATH = os.path.join("out_dat", "denoise_image.png")
+NOISE_IMAGE_PATH = os.path.join("out_dat", "noisy_image.png")
+OUTPUT_IMAGE_PATH = os.path.join("out_dat", "denoised_image.png")
 
 
 def read_noise_file(file_path):
