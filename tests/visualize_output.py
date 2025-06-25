@@ -33,9 +33,10 @@ def read_noise_file(file_path):
     # de-quantization
     # Note: the de-quantized image will be a little bit different from the original noise image
     image_np = (image_np.astype(np.float32) - INPUT_ZERO_POINT) * INPUT_SCALE
+    image_np = np.clip(image_np, 0.0, 1.0)
 
     # Save the noise image
-    Image.fromarray((image_np * 255).astype(np.uint8), mode="L").save(NOISE_IMAGE_PATH)
+    Image.fromarray((image_np * 255).round().astype(np.uint8), mode="L").save(NOISE_IMAGE_PATH)
 
     return image_np
 
