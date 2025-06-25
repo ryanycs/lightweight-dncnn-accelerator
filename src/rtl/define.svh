@@ -42,5 +42,6 @@
 `define GLB_IFADDR_OFFSET  32'd0
 `define GLB_WADDR_OFFSET   32'd32768
 `define GLB_OPADDR_OFFSET  32'd33920
+`define GLB_BIAS_OFFSET    32'd427136
 
 `endif

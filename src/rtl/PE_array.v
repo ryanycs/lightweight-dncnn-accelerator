@@ -48,9 +48,14 @@ module PE_array #(
     input                                   op_pass_done,
     input                                   PE_reset,
 
-    input [2:0]                             opsum_e_cnt,
-    input [1:0]                             opsum_t_cnt,
-    input [1:0]                             layer_info
+    // input [2:0]                             opsum_e_cnt,
+    // input [1:0]                             opsum_t_cnt,
+    // input [2:0]                             layer_info
+
+    input                                   ker_feed_done,
+    input                                   if3_feed_done,
+    input                                   if1_feed_done,
+    input                                   ip_feed_done
 );
 
     localparam [2:0] IDLE    = 3'd0;
@@ -98,16 +103,6 @@ module PE_array #(
     reg [NUMS_PE_ROW * NUMS_PE_COL-1:0] ifmap_ready_1d;
     reg [NUMS_PE_ROW * NUMS_PE_COL-1:0] filter_ready_1d;
 
-    // READ COUNT
-    reg                     GLB_filter_valid_pre;
-    reg                     GLB_ifmap_valid_pre;
-    reg                     GLB_ipsum_valid_pre;
-
-    // Output count
-    reg [1:0]               out_p_cnt;
-    reg [7:0]               out_F_cnt;
-    reg [4:0]               out_et_cnt;
-
     integer i,j;
 
     // PE Array
@@ -146,15 +141,15 @@ module PE_array #(
     always@(*) begin
         case(S)
             IDLE:       NS = RDW;
-            RDW:        NS = (GLB_filter_valid_pre & (~GLB_filter_valid))   ?   RDIF3   :   RDW;
-            RDIF3:      NS = (GLB_ifmap_valid_pre & (~GLB_ifmap_valid))     ?   RDIP    :   RDIF3;
-            RDIP:       NS = (GLB_ipsum_valid_pre & (~GLB_ipsum_valid))     ?   WROP    :   RDIP;
+            RDW:        NS = (ker_feed_done & (GLB_filter_valid))   ?   RDIF3   :   RDW;
+            RDIF3:      NS = (if3_feed_done & (GLB_ifmap_valid))    ?   RDIP    :   RDIF3;
+            RDIP:       NS = (ip_feed_done  & (GLB_ipsum_valid))    ?   WROP    :   RDIP;
             WROP:       if((op_get_done) & (GLB_opsum_ready)) begin  // 1 -> 0
                             NS = (op_pass_done) ? IDLE : RDIF1;
                         end else begin
                             NS = WROP;
                         end
-            RDIF1:      NS = (GLB_ifmap_valid_pre & (~GLB_ifmap_valid))     ?   RDIP    :   RDIF1;
+            RDIF1:      NS = (if1_feed_done & (GLB_ifmap_valid))    ?   RDIP    :   RDIF1;
             default:    NS = IDLE;
         endcase
     end
@@ -288,19 +283,6 @@ module PE_array #(
         end
     end
 
-    // in data
-    always@(posedge clk or posedge rst)begin
-        if(rst)begin
-            GLB_filter_valid_pre    <= 1'b0;
-            GLB_ifmap_valid_pre     <= 1'b0;
-            GLB_ipsum_valid_pre     <= 1'b0;
-        end else begin
-            GLB_filter_valid_pre    <= GLB_filter_valid;
-            GLB_ifmap_valid_pre     <= GLB_ifmap_valid;
-            GLB_ipsum_valid_pre     <= GLB_ipsum_valid;
-        end
-    end
-
     // Ouput data
     always@(*) begin
         GLB_opsum_valid = 1'b0;
@@ -314,11 +296,11 @@ module PE_array #(
             end
         end
         // case(layer_info)
-        //     2'b00:begin
+        //     3'd0:begin
         //         GLB_opsum_valid = opsum_valid[{opsum_t_cnt, 1'b0} + opsum_t_cnt + 2][opsum_e_cnt];             // t*3,   e
         //         GLB_data_out    = opsum[{opsum_t_cnt, 1'b0} + opsum_t_cnt + 2][opsum_e_cnt];
         //     end
-        //     2'b01:begin
+        //     3'd1,3'd2,3'd3:begin
         //         GLB_opsum_valid = opsum_valid[NUMS_PE_ROW-1][opsum_e_cnt+{opsum_t_cnt[0],opsum_t_cnt[0]}];     // 11,      t*3+e
         //         GLB_data_out    = opsum[NUMS_PE_ROW-1][opsum_e_cnt+{opsum_t_cnt[0],opsum_t_cnt[0]}];
         //     end

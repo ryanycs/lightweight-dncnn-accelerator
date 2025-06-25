@@ -4,7 +4,7 @@ module  Controller(
     input               clk,
     input               rst,
     // PS interface
-    input   [1:0]       layer_info,
+    input   [2:0]       layer_info,
     input               layer_enable,
     input               pass_enable,
     output              pass_ready,
@@ -17,7 +17,8 @@ module  Controller(
     output reg  [3:0]   bram_b_web
 );
 
-    localparam L0 = 2'b00, L13 = 2'b01, L4 = 2'b10;
+    localparam L0 = 3'd0, L1 = 3'd1, L2 = 3'd2, L3 = 3'd3, L4 = 3'd4;
+
     localparam LAYERIDLE     = 5'd0,  SETLN = 5'd1, SETXID = 5'd2, SETYID = 5'd3;
     localparam PASSIDLE      = 5'd4;
     localparam FEEDF_ADDR    = 5'd5,  FEEDFILTER    = 5'd6;
@@ -31,7 +32,7 @@ module  Controller(
     reg  [4:0]  CS, NS;
 
     // Config =====================================================================================================
-    reg  [1:0]  layer_info_reg;
+    reg  [2:0]  layer_info_reg;     // 0 1 2 3 4
     reg  [6:0]  xid_cnt;
     reg  [3:0]  yid_cnt;
     // Config =====================================================================================================
@@ -74,8 +75,8 @@ module  Controller(
     // PE array signals ===========================================================================================
 
     // PPU signals ================================================================================================
-    wire [3:0]                                  PPU_scaling_factor  = (layer_info_reg==L0) ? 4'd6 : 4'd8;
-    wire                                        PPU_relu_en         = (layer_info_reg==L4) ? 1'b0 : 1'b1;
+    reg  [3:0]                                  PPU_scaling_factor;
+    reg                                         PPU_relu_en;
     wire [7:0]                                  PPU_data_out;
     // PPU signals ================================================================================================
 
@@ -85,7 +86,6 @@ module  Controller(
     // ID LIST constant ===========================================================================================
 
     // mapping parameters lim =====================================================================================
-    reg  [5:0]  m_lim;
     reg  [2:0]  e_lim;
     reg  [1:0]  p_lim, q_lim, r_lim, t_lim;
     reg  [2:0]  m_shift_value;
@@ -140,13 +140,16 @@ module  Controller(
     reg  [1:0]  if_w_cnt_p1;  //    0~2     0~2     0~2
     reg  [2:0]  if_h_cnt_p1;  //    0~7     0~4     0~7
     reg  [1:0]  if_r_cnt_p1;  //    0~0     0~3     0~3
+
     wire [2:0]  if_h_lim        = e_lim + 3'd2;
+
     wire        if_w_done       = (if_w_cnt[1]);
     wire        if_h_done       = (if_h_cnt == if_h_lim);
     wire        if_r_done       = (if_r_cnt == r_lim);
     wire        if_w_p1_done    = (if_w_cnt_p1[1]);
     wire        if_h_p1_done    = (if_h_cnt_p1 == if_h_lim);
     wire        if_r_p1_done    = (if_r_cnt_p1 == r_lim);
+
     wire        if3_feed_done   = (if_w_done & if_h_done & if_r_done & GLB_ifmap_ready);
     wire        if1_feed_done   = (if_h_done & if_r_done & GLB_ifmap_ready);
     // feed ifmap =================================================================================================
@@ -160,9 +163,17 @@ module  Controller(
     reg  [2:0]  ipsum_e_cnt;        //  0~5     0~2     0~5
     reg  [1:0]  ipsum_p_cnt;        //  0~3     0~3     0~0
     reg  [1:0]  ipsum_t_cnt;        //  0~3     0~1     0~0
+    reg  [2:0]  ipsum_e_cnt_p1;     //  0~5     0~2     0~5
+    reg  [1:0]  ipsum_p_cnt_p1;     //  0~3     0~3     0~0
+    reg  [1:0]  ipsum_t_cnt_p1;     //  0~3     0~1     0~0
+
     wire        ip_e_done       = (ipsum_e_cnt     == e_lim);
     wire        ip_p_done       = (ipsum_p_cnt     == p_lim);
     wire        ip_t_done       = (ipsum_t_cnt     == t_lim);
+    wire        ip_e_p1_done    = (ipsum_e_cnt_p1  == e_lim);
+    wire        ip_p_p1_done    = (ipsum_p_cnt_p1  == p_lim);
+    wire        ip_t_p1_done    = (ipsum_t_cnt_p1  == t_lim);
+
     wire        ip_feed_done    = (ip_e_done & ip_p_done & ip_t_done & GLB_ipsum_ready);
     // feed ipsum counter =========================================================================================
 
@@ -179,7 +190,7 @@ module  Controller(
     wire        op_get_done     = (op_e_done & op_p_done & op_t_done & GLB_opsum_valid);    // e p t
 
     wire        op_pass_done    = (op_get_done & op_F_done);                                // e p t F
-    wire        layer_done      = (op_pass_done & tile_M_done & tile_C_done & tile_E_done);
+    wire        layer_done      = (tile_M_done & tile_C_done & tile_E_done);
     // get opsum counter ==========================================================================================
 
     // FSM transition =============================================================================================
@@ -223,7 +234,7 @@ module  Controller(
     // sequantial logic ===========================================================================================
     always @(posedge clk or posedge rst)begin
         if(rst)begin
-            layer_info_reg  <=  2'd0;
+            layer_info_reg  <=  3'd0;
             xid_cnt         <=  7'd0;   // 0~71
             yid_cnt         <=  4'd0;   // 0~11
             ker_w_cnt       <=  2'd0;   // 0~2
@@ -242,6 +253,9 @@ module  Controller(
             ipsum_e_cnt     <=  3'd0;   // 0~5
             ipsum_p_cnt     <=  2'd0;   // 0~3
             ipsum_t_cnt     <=  2'd0;   // 0~3
+            ipsum_e_cnt_p1  <=  3'd0;   // 0~5
+            ipsum_p_cnt_p1  <=  2'd0;   // 0~3
+            ipsum_t_cnt_p1  <=  2'd0;   // 0~3
 
             opsum_e_cnt     <=  3'd0;   // 0~5
             opsum_p_cnt     <=  2'd0;   // 0~3
@@ -256,7 +270,7 @@ module  Controller(
             case(CS)
                 LAYERIDLE:begin
                     if(layer_enable)begin
-                        layer_info_reg <= layer_info;   // 0 1 2
+                        layer_info_reg <= layer_info;   // 0 1 2 3 4
                     end
                     xid_cnt         <=  7'd0;   // 0~71
                     yid_cnt         <=  4'd0;   // 0~11
@@ -405,16 +419,34 @@ module  Controller(
                         end
                     end
                 end
-                FEEDIP_ADDR0:begin                                      // M_idx * pt * e * 256 + F_idx
-                    //bram_b_addr     <= `GLB_OPADDR_OFFSET + {{{{(tile_M_cnt << (m_shift_value)) * (e_lim + 3'd1)}, 8'd0} + opsum_F_cnt}, 2'd0};   // M_idx * p * t * e + F
-                    bram_b_addr     <= `GLB_OPADDR_OFFSET + {{{{(tile_M_mul_pt) * (e_lim + 3'd1)}, 8'd0} + opsum_F_cnt}, 2'd0};
+                FEEDIP_ADDR0:begin       // M_idx * pt * e * 256 + F_idx
+                    if((|layer_info_reg[1:0]) && (tile_C_cnt==2'd0))begin
+                        bram_b_addr     <= `GLB_BIAS_OFFSET;
+                    end else begin
+                        bram_b_addr     <= `GLB_OPADDR_OFFSET + {{{{(tile_M_mul_pt) * (e_lim + 3'd1)}, 8'd0} + opsum_F_cnt}, 2'd0};
+                    end
                     ipsum_e_cnt     <=  3'd0;
                     ipsum_p_cnt     <=  2'd0;
                     ipsum_t_cnt     <=  2'd0;
+
+                    if(e_lim==3'd0)
+                        ipsum_e_cnt_p1  <=  3'd0;
+                    else
+                        ipsum_e_cnt_p1  <=  3'd1;
+
+                    ipsum_p_cnt_p1  <=  2'd0;
+                    ipsum_t_cnt_p1  <=  2'd0;
                 end
                 FEEDIP_ADDR1:begin
-                    if(GLB_ipsum_ready)
-                        bram_b_addr <= bram_b_addr + {9'd256, 2'd0};
+                    if(GLB_ipsum_ready)begin
+                        if((|layer_info_reg[1:0]) && (tile_C_cnt==2'd0))begin
+                            if(ip_e_p1_done)begin
+                                bram_b_addr <= bram_b_addr + {  9'd1, 2'd0};
+                            end
+                        end else begin
+                            bram_b_addr <= bram_b_addr + {9'd256, 2'd0};    // +256;
+                        end
+                    end
                 end
                 FEEDIPSUM:begin // e -> p -> t
                     // for tag (data)
@@ -435,9 +467,33 @@ module  Controller(
                             ipsum_e_cnt <= ipsum_e_cnt + 3'd1;
                         end
                     end
+                    // for bram addr
+                    if(GLB_ipsum_ready)begin
+                        if(ip_e_p1_done)begin
+                            ipsum_e_cnt_p1 <= 3'd0;
+                            // if(ip_p_p1_done)begin
+                            //     ipsum_p_cnt_p1 <= 2'd0;
+                            //     if(ip_t_p1_done)begin
+                            //         ipsum_t_cnt_p1 <= 2'd0;
+                            //     end else begin
+                            //         ipsum_t_cnt_p1 <= ipsum_t_cnt_p1 + 2'd1;
+                            //     end
+                            // end else begin
+                            //     ipsum_p_cnt_p1 <= ipsum_p_cnt_p1 + 2'd1;
+                            // end
+                        end else begin
+                            ipsum_e_cnt_p1 <= ipsum_e_cnt_p1 + 3'd1;
+                        end
+                    end
                     // bram addr
                     if(GLB_ipsum_ready)begin
-                        bram_b_addr <= bram_b_addr + {9'd256, 2'd0};
+                        if((|layer_info_reg[1:0]) && (tile_C_cnt==2'd0))begin
+                            if(ip_e_p1_done)begin
+                                bram_b_addr <= bram_b_addr + {  9'd1, 2'd0};
+                            end
+                        end else begin
+                            bram_b_addr <= bram_b_addr + {9'd256, 2'd0};    // +256
+                        end
                     end
                 end
                 FEEDIF1_ADDR0:begin
@@ -519,7 +575,7 @@ module  Controller(
                 end
                 PASSDONE:begin
                     if(tile_M_done)begin
-                        tile_M_cnt <= 2'd0;
+                        tile_M_cnt <= 3'd0;
                         if(tile_C_done)begin
                             tile_C_cnt <= 2'd0;
                             tile_E_cnt <= (tile_E_done) ? 7'd0 : tile_E_cnt + 7'd1;
@@ -541,14 +597,12 @@ module  Controller(
         for(i=0;i<12;i=i+1)begin
             case(layer_info_reg)
                 L0:         IF_YID[i] = 4'd0;
-                L13:        IF_YID[i] = i/3;
-                L4:         IF_YID[i] = i/3;
-                default:    IF_YID[i] = 4'd0;
+                default:    IF_YID[i] = i/3;
             endcase
             for(j=0;j<6;j=j+1)begin
                 case(layer_info_reg)
                     L0:         IF_XID[i*6+j] = (i%3) + j;
-                    L13:        IF_XID[i*6+j] = (i%3) + (j%3);
+                    L1,L2,L3:   IF_XID[i*6+j] = (i%3) + (j%3);
                     L4:         IF_XID[i*6+j] = (i%3) + j;
                     default:    IF_XID[i*6+j] = 3'd0;
                 endcase
@@ -562,7 +616,7 @@ module  Controller(
             for(j=0;j<6;j=j+1)begin
                 case(layer_info_reg)
                     L0:         W_XID[i*6+j] = 3'd0;
-                    L13:        W_XID[i*6+j] = j/3;
+                    L1,L2,L3:   W_XID[i*6+j] = j/3;
                     L4:         W_XID[i*6+j] = 3'd0;
                     default:    W_XID[i*6+j] = 3'd0;
                 endcase
@@ -574,7 +628,7 @@ module  Controller(
         for(i=0;i<12;i=i+1)begin
             case(layer_info_reg)
                 L0:         IP_YID[i] = (i%3==0)    ? (i/3) :   `DEFAULT_YID;   // 0 X X 0 X X 0 X X 0 X X
-                L13:        IP_YID[i] = (i==0)      ? 4'd0  :   `DEFAULT_YID;   // 0 X X X X X X X X X X X
+                L1,L2,L3:   IP_YID[i] = (i==0)      ? 4'd0  :   `DEFAULT_YID;   // 0 X X X X X X X X X X X
                 L4:         IP_YID[i] = (i==0)      ? 4'd0  :   `DEFAULT_YID;   // 0 X X X X X X X X X X X
                 default:    IP_YID[i] = 4'd0;
             endcase
@@ -588,7 +642,7 @@ module  Controller(
         for(i=0;i<12;i=i+1)begin
             case(layer_info_reg)
                 L0:         OP_YID[i] = (i%3==2)    ? (i/3) :   `DEFAULT_YID;   // X X 0 X X 1 X X 2 X X 3
-                L13:        OP_YID[i] = (i==11)     ? 4'd0  :   `DEFAULT_YID;   // X X X X X X X X X X X 0
+                L1,L2,L3:   OP_YID[i] = (i==11)     ? 4'd0  :   `DEFAULT_YID;   // X X X X X X X X X X X 0
                 L4:         OP_YID[i] = (i==11)     ? 4'd0  :   `DEFAULT_YID;   // X X X X X X X X X X X 0
                 default:    OP_YID[i] = 4'd0;
             endcase
@@ -613,7 +667,7 @@ module  Controller(
                 E_lim           = 7'd42;
                 m_shift_value   = 3'd4;
             end
-            L13:begin
+            L1,L2,L3:begin
                 e_lim           = (tile_E_done) ? 3'd0 : 3'd2;    // 1 : 3
                 p_lim           = 2'd3;
                 q_lim           = 2'd3;
@@ -659,30 +713,36 @@ module  Controller(
     // TAG
     assign ifmap_tag_X          = if_h_cnt;
     assign ifmap_tag_Y          = {2'b00, if_r_cnt};
-    assign filter_tag_X         = {2'd0, (layer_info_reg==L13 ? ker_t_cnt[0] : 1'b0)};
+    assign filter_tag_X         = {2'd0, ((|layer_info_reg[1:0]) ? ker_t_cnt[0] : 1'b0)};
 
     // assign filter_tag_Y         = {(layer_info_reg==L0  ? ker_t_cnt : ker_r_cnt), ker_h_cnt};     // t*3 + h
     assign filter_tag_Y         = (layer_info_reg==L0  ? {ker_t_cnt + {1'b0, ker_t_cnt, 1'b0}} : {ker_r_cnt + {1'b0, ker_r_cnt, 1'b0}}) + {2'b00, ker_h_cnt};     // t*3+h  or  r*3+h 4 bits
 
-    assign ipsum_tag_X          = (layer_info_reg==L13) ? ({ipsum_t_cnt[0], ipsum_t_cnt[0]} + {ipsum_e_cnt}) : ipsum_e_cnt;
+    assign ipsum_tag_X          = ((|layer_info_reg[1:0])) ? ({ipsum_t_cnt[0], ipsum_t_cnt[0]} + {ipsum_e_cnt}) : ipsum_e_cnt;
     assign ipsum_tag_Y          = {2'd0, (layer_info_reg==L0 ? ipsum_t_cnt : 2'd0)};
-    assign opsum_tag_X          = (layer_info_reg==L13) ? ({opsum_t_cnt[0], opsum_t_cnt[0]} + {opsum_e_cnt}) : opsum_e_cnt;
+    assign opsum_tag_X          = ((|layer_info_reg[1:0])) ? ({opsum_t_cnt[0], opsum_t_cnt[0]} + {opsum_e_cnt}) : opsum_e_cnt;
     assign opsum_tag_Y          = {2'd0, (layer_info_reg==L0 ? opsum_t_cnt : 2'd0)};
     // Handshake
     assign GLB_ifmap_valid      = (CS==FEEDIF1 || CS==FEEDIF3);
     assign GLB_filter_valid     = (CS==FEEDFILTER);
     assign GLB_ipsum_valid      = (CS==FEEDIPSUM);
     assign GLB_opsum_ready      = (CS==GETOPSUM);
+
     always@(*)begin
-        if(CS==FEEDIF3 && if_w_cnt==2'd0)               GLB_data_in          = 32'h80808080;     // fisrt column
-        else if(CS==FEEDIF1 && opsum_F_cnt==8'd255)     GLB_data_in          = 32'h80808080;     //  last column
-        else if(CS==FEEDIPSUM && tile_C_cnt==2'd0)      GLB_data_in          = `DATA_SIZE'd0;   //  bias = 0
-        else                                            GLB_data_in          = (bram_b_dout);
+        if(CS==FEEDIF3 && if_w_cnt==2'd0)                                       GLB_data_in          = 32'h80808080;     // fisrt column
+        else if(CS==FEEDIF1 && opsum_F_cnt==8'd255)                             GLB_data_in          = 32'h80808080;     //  last column
+        // else if(CS==FEEDIPSUM && tile_C_cnt==2'd0)      GLB_data_in          = `DATA_SIZE'd0;   //  bias = 0
+        else if(CS==FEEDIPSUM && tile_C_cnt==2'd0 && (~|layer_info_reg[1:0]))   GLB_data_in          = `DATA_SIZE'd0;   //  bias = 0
+        else                                                                    GLB_data_in          = (bram_b_dout);
     end
+
     // PE ARRAY signals ======================================================================================================
 
     // BRAM ==================================================================================================================
-    assign bram_b_en            = 1'b1;
+
+    // assign bram_b_en            = 1'b1;
+    assign bram_b_en            = ((CS==GETOPSUM)&&(~GLB_opsum_valid)) ?  1'b0 : 1'b1;
+
     always @(*) begin
         if(CS==GETOPSUM && GLB_opsum_valid)begin
             if(tile_C_done)begin
@@ -698,6 +758,19 @@ module  Controller(
         end
     end
     // BRAM ==================================================================================================================
+
+    // PPU signals ===========================================================================================================
+    always@(*)begin
+        case(layer_info_reg)
+            L0:         {PPU_scaling_factor, PPU_relu_en} = {4'd6, 1'b1};
+            L1:         {PPU_scaling_factor, PPU_relu_en} = {4'd7, 1'b1};
+            L2:         {PPU_scaling_factor, PPU_relu_en} = {4'd7, 1'b1};
+            L3:         {PPU_scaling_factor, PPU_relu_en} = {4'd8, 1'b1};
+            L4:         {PPU_scaling_factor, PPU_relu_en} = {4'd9, 1'b0};
+            default:    {PPU_scaling_factor, PPU_relu_en} = {4'd0, 1'b0};
+        endcase
+    end
+    // PPU signals ===========================================================================================================
 
     // TOP signals ===========================================================================================================
     assign pass_done            = (CS==PASSDONE);
@@ -750,10 +823,10 @@ module  Controller(
         .op_get_done        (op_get_done        ),
         .op_pass_done       (op_pass_done       ),
         .PE_reset           (pass_done          ),
-
-        .opsum_e_cnt        (opsum_e_cnt        ),
-        .opsum_t_cnt        (opsum_t_cnt        ),
-        .layer_info         (layer_info_reg     )
+        .ker_feed_done      (ker_feed_done      ),
+        .if3_feed_done      (if3_feed_done      ),
+        .if1_feed_done      (if1_feed_done      ),
+        .ip_feed_done       (ip_feed_done       )
     );
     // PE array instance ==========================================================================================
 
