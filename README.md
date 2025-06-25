@@ -136,7 +136,7 @@ The simulation results will be saved in the `tests/out_dat` directory, which con
 
 ## Contributors
 
-- `M16134088`
+- [`M16134088`](https://github.com/CPC-503)
 - `P76134820`
 - `M56134010`
 - `P76144320`
