@@ -29,4 +29,7 @@ build:
 	python scripts/build.py
 
 clean:
+	cd model && make clean
+	cd vivado && make clean
+	cd tests && make clean
 	@$(CLEAN)
