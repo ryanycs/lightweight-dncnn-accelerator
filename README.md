@@ -86,7 +86,7 @@ make synth
 ```
 
 > :warning:
-> Make sure you have **Vivado 2022.1** installed and have set the vivado executable path in your environment variables. The synthesis process may take a long time.
+> Make sure you have **Vivado 2022.1** installed and have set the Vivado executable path in your environment variables. The synthesis process may take a long time.
 
 The `.bit` and `.hwh` files will be generated in the `vivado/output` directory.
 
@@ -103,7 +103,7 @@ make build
 This command will package the following files into `build` directory for deployment on the Pynq Z2 board:
 
 - Bitstream file (`.bit`)
-- Hardware handlof file (`.hwh`)
+- Hardware handoff file (`.hwh`)
 - Jupyter notebook (`.ipynb`) for running the accelerator on the Pynq Z2 board
 - Model weights and input data in `.hex` or `.csv` format
 
