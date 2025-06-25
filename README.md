@@ -141,7 +141,7 @@ The simulation results will be saved in the `tests/out_dat` directory, which con
 - `M56134010`
 - `P76144320`
 - `NN6131045`
-- `P76134244`
+- [`P76134244`](https://github.com/linjim2235)
 
 ## References
 
